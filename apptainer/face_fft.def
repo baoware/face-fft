@@ -1,0 +1,16 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+
+%post
+    export TZ=America/New_York
+
+    pip install --upgrade pip
+    pip install --no-cache-dir \
+        numpy \
+        matplotlib \
+        torchvision \
+        transformers
+
+%labels
+    Author   Donghwa Shin, gcs3ja
+    Version  v0.1.0
