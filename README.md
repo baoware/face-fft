@@ -106,8 +106,8 @@ The goal is cross-model generalization rather than optimizing narrowly for a sin
 
 ## Development Workflow
 
-- `dev` is the default development branch.
-- Direct merges into `dev` are not permitted.
+- `main` is the default development branch.
+- Direct merges into `main` are not permitted.
 - All changes must be introduced via pull requests.
 - Install pre-commit hooks before committing:
 
