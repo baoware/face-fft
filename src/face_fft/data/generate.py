@@ -60,10 +60,19 @@ def preprocess_video_tensor(
 
 
 def generate_synthetic_video_cogvideox(
-    image: Image.Image, prompt: str, model_id: str = "THUDM/CogVideoX-2b"
+    image: Image.Image,
+    prompt: str,
+    model_id: str = "THUDM/CogVideoX-2b",
+    height: int = 480,
+    width: int = 480,
+    num_inference_steps: int = 20,
 ):
     """
     Generates a synthetic video using CogVideoX 2B.
+
+    height/width default to 480 to reduce VRAM usage and generation time.
+    The output is downsampled to 256x256 by preprocess_video_tensor, so
+    generating at native 720p is unnecessary for this pipeline.
     """
     pipe = CogVideoXImageToVideoPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
@@ -71,7 +80,12 @@ def generate_synthetic_video_cogvideox(
     pipe = pipe.to("cuda")
 
     frames = pipe(
-        image=image, prompt=prompt, num_inference_steps=50, guidance_scale=6.0
+        image=image,
+        prompt=prompt,
+        height=height,
+        width=width,
+        num_inference_steps=num_inference_steps,
+        guidance_scale=6.0,
     ).frames[0]
 
     del pipe
@@ -82,15 +96,30 @@ def generate_synthetic_video_cogvideox(
 
 
 def generate_synthetic_video_wan(
-    image: Image.Image, prompt: str, model_id: str = "Wan-AI/Wan2.1-I2V"
+    image: Image.Image,
+    prompt: str,
+    model_id: str = "Wan-AI/Wan2.2-I2V-A14B",
+    height: int = 480,
+    width: int = 480,
+    num_inference_steps: int = 20,
 ):
     """
     Generates a synthetic video using WanImageToVideoPipeline.
+
+    height/width default to 480 to reduce VRAM usage and generation time.
+    The output is downsampled to 256x256 by preprocess_video_tensor, so
+    generating at native resolution is unnecessary for this pipeline.
     """
     pipe = WanImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
     pipe = pipe.to("cuda")
 
-    frames = pipe(image=image, prompt=prompt, num_inference_steps=50).frames[0]
+    frames = pipe(
+        image=image,
+        prompt=prompt,
+        height=height,
+        width=width,
+        num_inference_steps=num_inference_steps,
+    ).frames[0]
 
     del pipe
     torch.cuda.empty_cache()

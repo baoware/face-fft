@@ -1,31 +1,10 @@
 import argparse
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from face_fft.data.dataset import PairedVideoDataset, split_paired_dataset
-from face_fft.features.spectral import SpatiotemporalFFT
-from face_fft.models.classifier import CompactSpectralCNN
+from face_fft.models.pipeline import FaceFFTPipeline
 from face_fft.training.trainer import Trainer
-
-
-class FaceFFTPipeline(nn.Module):
-    """
-    Unified testing wrapper composing the feature extractor and the classifier.
-    Moves processing directly onto the target device end-to-end.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.fft = SpatiotemporalFFT(log_scale=True)
-        self.classifier = CompactSpectralCNN(
-            in_channels=3, base_channels=16, num_classes=1
-        )
-
-    def forward(self, x):
-        freq_vol = self.fft(x)
-        logits = self.classifier(freq_vol)
-        return logits
 
 
 def main():

@@ -53,6 +53,27 @@ def main():
         help="Conditioning prompt",
     )
     parser.add_argument("--num_frames", type=int, default=16, help="Target frame count")
+    parser.add_argument(
+        "--gen_height",
+        type=int,
+        default=480,
+        help="Generation height in pixels. Lower values reduce VRAM and time. "
+        "Output is always downsampled to 256x256 after generation.",
+    )
+    parser.add_argument(
+        "--gen_width",
+        type=int,
+        default=480,
+        help="Generation width in pixels. Lower values reduce VRAM and time. "
+        "Output is always downsampled to 256x256 after generation.",
+    )
+    parser.add_argument(
+        "--num_inference_steps",
+        type=int,
+        default=20,
+        help="Diffusion denoising steps. Lower values are faster; 20 is a good "
+        "compute/quality tradeoff for this low-resolution detection task.",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.real_out_dir, exist_ok=True)
@@ -74,9 +95,7 @@ def main():
         default_model = "THUDM/CogVideoX-2b"  # Or THUDM/CogVideoX1.5-5B-I2V
     else:
         gen_fn = generate_synthetic_video_wan
-        default_model = (
-            "Wan-AI/Wan22-I2V"  # User specifically asked for Wan 2.2 placeholder
-        )
+        default_model = "Wan-AI/Wan2.2-I2V-A14B"
 
     model_id = args.model_id if args.model_id else default_model
 
@@ -97,7 +116,12 @@ def main():
             # 2. Generate synthetic frames (list of PIL.Image)
             print(f"\nGenerating synthetic for {vid_name} using {model_id}...")
             synth_frames_pil = gen_fn(
-                first_frame_img, prompt=args.prompt, model_id=model_id
+                first_frame_img,
+                prompt=args.prompt,
+                model_id=model_id,
+                height=args.gen_height,
+                width=args.gen_width,
+                num_inference_steps=args.num_inference_steps,
             )
 
             # Convert synth frames back to Tensor (T, H, W, C) [0, 255]

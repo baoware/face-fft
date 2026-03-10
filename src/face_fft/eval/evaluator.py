@@ -33,7 +33,7 @@ class Evaluator:
                 # Model outputs basic logits
                 logits = self.model(inputs)
                 probs = torch.sigmoid(logits)
-                preds = (probs > 0.5).int().cpu().numpy()
+                preds = (probs > 0.5).int().squeeze(1).cpu().numpy()
 
                 all_preds.extend(preds)
                 all_labels.extend(labels.numpy())
