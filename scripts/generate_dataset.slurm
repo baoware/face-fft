@@ -62,7 +62,7 @@ ${APPTAINER} exec \
     --env HF_DATASETS_OFFLINE=1 \
     --env PYTHONPATH=/mnt/code/src \
     "${IMAGE}" \
-    python3 /mnt/code/scripts/generate_dataset.py \
+    python3 /mnt/code/bin/generate_dataset.py \
         --source_dir      "${SOURCE_DIR}" \
         --real_out_dir    "${REAL_OUT_DIR}" \
         --synth_out_dir   "${SYNTH_OUT_DIR}" \

@@ -136,7 +136,7 @@ mkdir -p "${CHECKPOINT_DIR}"
 # Both the real and synthetic tensors are stored at shape (C=3, T=16, H=256, W=256).
 
 log "[1/5] Generating paired dataset with CogVideoX (${MODEL_COGVIDEOX})..."
-${PY} "${REPO_ROOT}/scripts/generate_dataset.py" \
+${PY} "${REPO_ROOT}/bin/generate_dataset.py" \
     --source_dir  "${RAW_VIDEO_DIR}" \
     --real_out_dir  "${REAL_PT_DIR}" \
     --synth_out_dir "${SYNTH_COGVIDEOX_DIR}" \
@@ -155,7 +155,7 @@ ${PY} "${REPO_ROOT}/scripts/generate_dataset.py" \
 # This is safe because generate_dataset.py skips files that already exist.
 
 log "[2/5] Generating paired dataset with Wan (${MODEL_WAN})..."
-${PY} "${REPO_ROOT}/scripts/generate_dataset.py" \
+${PY} "${REPO_ROOT}/bin/generate_dataset.py" \
     --source_dir  "${RAW_VIDEO_DIR}" \
     --real_out_dir  "${REAL_PT_DIR}" \
     --synth_out_dir "${SYNTH_WAN_DIR}" \
@@ -174,7 +174,7 @@ ${PY} "${REPO_ROOT}/scripts/generate_dataset.py" \
 # Best checkpoint is selected by validation loss.
 
 log "[3/5] Training on CogVideoX data..."
-${PY} "${REPO_ROOT}/scripts/train.py" \
+${PY} "${REPO_ROOT}/bin/train.py" \
     --real_dir  "${REAL_PT_DIR}" \
     --synth_dir "${SYNTH_COGVIDEOX_DIR}" \
     --epochs     "${EPOCHS}" \
@@ -187,7 +187,7 @@ ${PY} "${REPO_ROOT}/scripts/train.py" \
 # =============================================================================
 
 log "[4/5] Evaluating in-distribution (CogVideoX test split)..."
-${PY} "${REPO_ROOT}/scripts/evaluate.py" \
+${PY} "${REPO_ROOT}/bin/evaluate.py" \
     --real_dir   "${REAL_PT_DIR}" \
     --synth_dir  "${SYNTH_COGVIDEOX_DIR}" \
     --model_path "${CKPT_COGVIDEOX}" \
@@ -200,7 +200,7 @@ ${PY} "${REPO_ROOT}/scripts/evaluate.py" \
 # to a generator it has never seen during training?
 
 log "[5/5] Evaluating cross-generator generalization (CogVideoX model → Wan data)..."
-${PY} "${REPO_ROOT}/scripts/evaluate.py" \
+${PY} "${REPO_ROOT}/bin/evaluate.py" \
     --real_dir   "${REAL_PT_DIR}" \
     --synth_dir  "${SYNTH_WAN_DIR}" \
     --model_path "${CKPT_COGVIDEOX}" \
