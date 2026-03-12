@@ -112,7 +112,7 @@ if [ ! -d "${RAW_VIDEO_DIR}" ]; then
     exit 1
 fi
 
-NUM_VIDEOS=$(find "${RAW_VIDEO_DIR}" -maxdepth 1 \( -name "*.mp4" -o -name "*.avi" -o -name "*.mov" \) | wc -l)
+NUM_VIDEOS=$(find "${RAW_VIDEO_DIR}" \( -name "*.mp4" -o -name "*.avi" -o -name "*.mov" \) | wc -l)
 if [ "${NUM_VIDEOS}" -eq 0 ]; then
     echo "ERROR: No .mp4/.avi/.mov files found in ${RAW_VIDEO_DIR}."
     exit 1

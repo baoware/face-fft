@@ -99,7 +99,11 @@ def main():
 
     allowed_exts = [".mp4", ".avi", ".mov"]
     source_path = Path(args.source_dir)
-    videos = [f for f in source_path.iterdir() if f.suffix.lower() in allowed_exts]
+    videos = [
+        f
+        for f in source_path.rglob("*")
+        if f.is_file() and f.suffix.lower() in allowed_exts
+    ]
 
     if not videos:
         print(f"No videos found in {args.source_dir}")
