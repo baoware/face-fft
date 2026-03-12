@@ -38,9 +38,9 @@ CHECKPOINT_DIR="/scratch/${USER}/checkpoints"
 # Generator: "cogvideox" or "wan"
 GENERATOR="cogvideox"
 
-SOURCE_DIR="/mnt/code/data/raw_videos"
-REAL_OUT_DIR="/mnt/code/data/real"
-SYNTH_OUT_DIR="/mnt/code/data/synth_${GENERATOR}"
+SOURCE_DIR="/mnt/code/src/face_fft/data/raw_videos"
+REAL_OUT_DIR="/mnt/code/src/face_fft/data/real"
+SYNTH_OUT_DIR="/mnt/code/src/face_fft/data/synth_${GENERATOR}"
 
 PROMPT="A highly realistic person's face, talking slightly, photorealistic video."
 NUM_FRAMES=16

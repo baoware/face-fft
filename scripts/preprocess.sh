@@ -20,7 +20,7 @@
 #      mkdir -p src/face_fft/data/raw_videos
 #      kaggle datasets download -d tapakah68/selfies-and-video-dataset-4-000-people --unzip -p src/face_fft/data/raw_videos
 #
-#    Or download manually from the Kaggle page and unzip into data/raw_videos/.
+#    Or download manually from the Kaggle page and unzip into src/face_fft/data/raw_videos/.
 #
 # 2. HARDWARE
 #    Data generation requires a CUDA GPU with sufficient VRAM:
