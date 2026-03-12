@@ -38,7 +38,7 @@ module load apptainer
 # ---------------------------------------------------------------------------
 
 APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
-CODEDIR="/home/${USER}/face-fft"
+CODEDIR="/home/${USER}/home/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
 
 REAL_DATA_DIR="/mnt/code/src/face_fft/data/real"

@@ -13,9 +13,9 @@
 # USAGE
 #   sbatch scripts/generate_dataset.slurm
 
-#SBATCH -A uva-mira
+#SBATCH -A ml_at_uva
 #SBATCH -p gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH -c 4
 #SBATCH -t 72:00:00
 #SBATCH -J face-fft-generate
@@ -31,7 +31,7 @@ module load apptainer
 # ---------------------------------------------------------------------------
 
 APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
-CODEDIR="/home/${USER}/face-fft"
+CODEDIR="/home/${USER}/home/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
 CHECKPOINT_DIR="/scratch/${USER}/checkpoints"
 
