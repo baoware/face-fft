@@ -74,6 +74,24 @@ def main():
         help="Diffusion denoising steps. Lower values are faster; 20 is a good "
         "compute/quality tradeoff for this low-resolution detection task.",
     )
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default=None,
+        help=(
+            "Path to local HuggingFace model cache. "
+            "Use with --local_files_only to prevent network access during HPC jobs."
+        ),
+    )
+    parser.add_argument(
+        "--local_files_only",
+        action="store_true",
+        default=False,
+        help=(
+            "Load models from local cache only; raise an error if not found locally. "
+            "Recommended for HPC batch jobs to prevent silent downloads."
+        ),
+    )
     args = parser.parse_args()
 
     os.makedirs(args.real_out_dir, exist_ok=True)
@@ -122,6 +140,8 @@ def main():
                 height=args.gen_height,
                 width=args.gen_width,
                 num_inference_steps=args.num_inference_steps,
+                cache_dir=args.cache_dir,
+                local_files_only=args.local_files_only,
             )
 
             # Convert synth frames back to Tensor (T, H, W, C) [0, 255]

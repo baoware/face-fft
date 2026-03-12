@@ -66,6 +66,8 @@ def generate_synthetic_video_cogvideox(
     height: int = 480,
     width: int = 480,
     num_inference_steps: int = 20,
+    cache_dir: str | None = None,
+    local_files_only: bool = False,
 ):
     """
     Generates a synthetic video using CogVideoX 2B.
@@ -75,7 +77,10 @@ def generate_synthetic_video_cogvideox(
     generating at native 720p is unnecessary for this pipeline.
     """
     pipe = CogVideoXImageToVideoPipeline.from_pretrained(
-        model_id, torch_dtype=torch.float16
+        model_id,
+        torch_dtype=torch.float16,
+        cache_dir=cache_dir,
+        local_files_only=local_files_only,
     )
     pipe = pipe.to("cuda")
 
@@ -102,6 +107,8 @@ def generate_synthetic_video_wan(
     height: int = 480,
     width: int = 480,
     num_inference_steps: int = 20,
+    cache_dir: str | None = None,
+    local_files_only: bool = False,
 ):
     """
     Generates a synthetic video using WanImageToVideoPipeline.
@@ -110,7 +117,12 @@ def generate_synthetic_video_wan(
     The output is downsampled to 256x256 by preprocess_video_tensor, so
     generating at native resolution is unnecessary for this pipeline.
     """
-    pipe = WanImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+    pipe = WanImageToVideoPipeline.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        cache_dir=cache_dir,
+        local_files_only=local_files_only,
+    )
     pipe = pipe.to("cuda")
 
     frames = pipe(
