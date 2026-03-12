@@ -1,15 +1,24 @@
 Bootstrap: docker
-From: pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+From: pytorch/pytorch:2.10.0-cuda12.6-cudnn9-runtime
 
 %post
     export TZ=America/New_York
 
     pip install --upgrade pip
     pip install --no-cache-dir \
-        numpy \
-        matplotlib \
-        torchvision \
-        transformers
+        torchvision>=0.25.0 \
+        torchaudio>=2.10.0 \
+        diffusers>=0.37.0 \
+        transformers>=5.3.0 \
+        accelerate>=1.13.0 \
+        scikit-learn>=1.8.0 \
+        pillow>=12.1.1 \
+        imageio[ffmpeg]>=2.37.3 \
+        tqdm>=4.67.3
+
+%environment
+    # Bind-mount the project root at runtime and expose the package
+    export PYTHONPATH="${PYTHONPATH}:/workspace/src"
 
 %labels
     Author   Donghwa Shin, gcs3ja
