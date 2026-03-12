@@ -31,22 +31,22 @@ echo ""
 export HF_HOME="${CHECKPOINT_DIR}"
 mkdir -p "${CHECKPOINT_DIR}"
 
-if ! command -v huggingface-cli &>/dev/null; then
-    echo "ERROR: huggingface-cli not found. Activate your Python environment first."
+if ! command -v hf &>/dev/null; then
+    echo "ERROR: hf not found. Activate your Python environment first."
     exit 1
 fi
 
 echo "==> Checking HuggingFace login status..."
-huggingface-cli whoami || echo "(Not logged in — ok for public models)"
+hf auth whoami || echo "(Not logged in — ok for public models)"
 echo ""
 
 echo "==> Downloading ${MODEL_COGVIDEOX} (~15 GB)..."
-huggingface-cli download "${MODEL_COGVIDEOX}" --repo-type model --quiet
+hf download "${MODEL_COGVIDEOX}" --repo-type model --quiet
 echo "    Done."
 echo ""
 
 echo "==> Downloading ${MODEL_WAN} (~40 GB — this will take a while)..."
-huggingface-cli download "${MODEL_WAN}" --repo-type model --quiet
+hf download "${MODEL_WAN}" --repo-type model --quiet
 echo "    Done."
 echo ""
 

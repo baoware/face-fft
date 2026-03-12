@@ -11,7 +11,7 @@
 # USAGE
 #   sbatch scripts/generate_dataset.slurm
 
-#SBATCH -A <allocation-name>
+#SBATCH -A uva-mira
 #SBATCH -p gpu
 #SBATCH --gres=gpu:1
 #SBATCH -c 4
@@ -28,7 +28,7 @@ module load apptainer
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-APPTAINER="apptainer"
+APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
 CODEDIR="/home/${USER}/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
 CHECKPOINT_DIR="/scratch/${USER}/checkpoints"

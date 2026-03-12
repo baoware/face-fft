@@ -19,6 +19,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "huggingface-hub>=1.6.0",
+    "kaggle>=2.0.0",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
 ]

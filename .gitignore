@@ -14,3 +14,6 @@ apptainer/run_build.sh
 
 # Apptainer build artifacts
 apptainer/face_fft.sif
+
+# Dataset files
+src/face_fft/data/raw_videos/
