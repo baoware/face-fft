@@ -152,6 +152,20 @@ def main():
             synth_frames_np = [
                 torch.from_numpy(np.array(img)) for img in synth_frames_pil
             ]
+
+            # Validate all frames have consistent dimensions
+            if len(synth_frames_np) == 0:
+                raise ValueError(f"Generation produced 0 frames for {vid_name}")
+
+            first_shape = synth_frames_np[0].shape
+            for i, frame in enumerate(synth_frames_np):
+                if frame.shape != first_shape:
+                    raise ValueError(
+                        f"Frame {i} has shape {frame.shape}, expected {first_shape}. "
+                        f"Generator returned {len(synth_frames_np)} frames with inconsistent dimensions."
+                    )
+
+            print(f"Generated {len(synth_frames_np)} frames with shape {first_shape}")
             synth_tensor_raw = torch.stack(synth_frames_np, dim=0)
 
             # Read real video fully to match length
@@ -170,7 +184,10 @@ def main():
             torch.save(synth_tensor, synth_out_path)
 
         except Exception as e:
-            print(f"Failed processing {vid_name}: {e}")
+            print(f"Failed processing {vid_name}: {type(e).__name__}: {e}")
+            import traceback
+
+            traceback.print_exc()
 
     print("Generation pipeline complete.")
 

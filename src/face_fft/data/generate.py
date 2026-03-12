@@ -53,6 +53,16 @@ def preprocess_video_tensor(
         frame = TF.center_crop(frame, target_size)
         resized_frames.append(frame)
 
+    # Validate all resized frames have consistent shape before stacking
+    if len(resized_frames) > 0:
+        first_frame_shape = resized_frames[0].shape
+        for i, frame in enumerate(resized_frames):
+            if frame.shape != first_frame_shape:
+                raise ValueError(
+                    f"Frame {i} has shape {frame.shape}, expected {first_frame_shape}. "
+                    f"Resize/crop logic produced inconsistent frame dimensions."
+                )
+
     out_video = torch.stack(resized_frames, dim=0)  # (T, C, H, W)
     out_video = out_video.permute(1, 0, 2, 3)  # (C, T, H, W)
 
