@@ -5,14 +5,20 @@
 # Evaluates in-distribution (CogVideoX → CogVideoX) and cross-generator
 # generalization (CogVideoX model → Wan data).
 #
+# OPTIONAL evaluation-only job. Re-run evaluation without retraining.
+#
 # PREREQUISITES
 #   1. Run scripts/preprocess.sh BEFORE submitting this job.
 #   2. Run scripts/train.slurm (or train.py locally) BEFORE this job.
-#   3. Verify that data/real/, data/synth_cogvideox/, and data/synth_wan/ contain .pt files.
+#   3. Verify that src/face_fft/data/real/, src/face_fft/data/synth_cogvideox/,
+#      and src/face_fft/data/synth_wan/ contain .pt files.
 #   4. Verify that checkpoints/best_model_cogvideox.pt exists.
 #
 # USAGE
 #   sbatch scripts/eval.slurm
+#
+# NOTE: train.slurm already includes evaluation. Use this script only if you need
+# to re-evaluate an existing model checkpoint without retraining.
 
 #SBATCH -A uva-mira
 #SBATCH -p gpu
@@ -35,9 +41,9 @@ APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
 CODEDIR="/home/${USER}/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
 
-REAL_DATA_DIR="/mnt/code/data/real"
-SYNTH_COGVIDEOX_DIR="/mnt/code/data/synth_cogvideox"
-SYNTH_WAN_DIR="/mnt/code/data/synth_wan"
+REAL_DATA_DIR="/mnt/code/src/face_fft/data/real"
+SYNTH_COGVIDEOX_DIR="/mnt/code/src/face_fft/data/synth_cogvideox"
+SYNTH_WAN_DIR="/mnt/code/src/face_fft/data/synth_wan"
 CHECKPOINT_DIR="/mnt/code/checkpoints"
 
 BATCH_SIZE=16

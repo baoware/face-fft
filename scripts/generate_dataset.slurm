@@ -5,7 +5,9 @@
 #
 # PREREQUISITES
 #   1. Run scripts/download_checkpoints.sh BEFORE submitting this job.
-#   2. Place raw .mp4 source videos in ${CODEDIR}/data/raw_videos/
+#   2. Download Kaggle dataset to ${CODEDIR}/src/face_fft/data/raw_videos/:
+#      mkdir -p src/face_fft/data/raw_videos
+#      kaggle datasets download -d tapakah68/selfies-and-video-dataset-4-000-people --unzip -p src/face_fft/data/raw_videos
 #   3. Build and upload the Apptainer image (see apptainer/README.md)
 #
 # USAGE

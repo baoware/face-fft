@@ -9,16 +9,16 @@
 #
 # 1. KAGGLE DATASET
 #    Download the "Selfies and Video" dataset from Kaggle:
-#      https://www.kaggle.com/datasets/tapakah68/selfies-and-videos
+#      https://www.kaggle.com/datasets/tapakah68/selfies-and-video-dataset-4-000-people
 #
 #    Place the downloaded .mp4 video files (real face videos) into:
-#      data/raw_videos/
+#      src/face_fft/data/raw_videos/
 #    relative to the repository root. The script expects that directory to exist
 #    and contain at least one .mp4 file before it starts.
 #
 #    Via Kaggle CLI (if configured):
-#      mkdir -p data/raw_videos
-#      kaggle datasets download -d tapakah68/selfies-and-videos --unzip -p data/raw_videos
+#      mkdir -p src/face_fft/data/raw_videos
+#      kaggle datasets download -d tapakah68/selfies-and-video-dataset-4-000-people --unzip -p src/face_fft/data/raw_videos
 #
 #    Or download manually from the Kaggle page and unzip into data/raw_videos/.
 #
@@ -52,12 +52,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Directory containing downloaded real .mp4 videos (Kaggle dataset)
-RAW_VIDEO_DIR="${REPO_ROOT}/data/raw_videos"
+RAW_VIDEO_DIR="${REPO_ROOT}/src/face_fft/data/raw_videos"
 
 # Processed tensor output directories
-REAL_PT_DIR="${REPO_ROOT}/data/real"
-SYNTH_COGVIDEOX_DIR="${REPO_ROOT}/data/synth_cogvideox"
-SYNTH_WAN_DIR="${REPO_ROOT}/data/synth_wan"
+REAL_PT_DIR="${REPO_ROOT}/src/face_fft/data/real"
+SYNTH_COGVIDEOX_DIR="${REPO_ROOT}/src/face_fft/data/synth_cogvideox"
+SYNTH_WAN_DIR="${REPO_ROOT}/src/face_fft/data/synth_wan"
 
 # HuggingFace model IDs
 MODEL_COGVIDEOX="THUDM/CogVideoX-2b"
