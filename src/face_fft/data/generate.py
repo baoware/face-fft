@@ -72,7 +72,7 @@ def preprocess_video_tensor(
 def generate_synthetic_video_cogvideox(
     image: Image.Image,
     prompt: str,
-    model_id: str = "THUDM/CogVideoX-2b",
+    model_id: str = "zai-org/CogVideoX-5b-I2V",
     height: int = 480,
     width: int = 480,
     num_inference_steps: int = 20,
@@ -80,7 +80,7 @@ def generate_synthetic_video_cogvideox(
     local_files_only: bool = False,
 ):
     """
-    Generates a synthetic video using CogVideoX 2B.
+    Generates a synthetic video using CogVideoX 5B.
 
     height/width default to 480 to reduce VRAM usage and generation time.
     The output is downsampled to 256x256 by preprocess_video_tensor, so
@@ -94,14 +94,16 @@ def generate_synthetic_video_cogvideox(
     )
     pipe = pipe.to("cuda")
 
-    frames = pipe(
+    output = pipe(
         image=image,
         prompt=prompt,
-        height=height,
-        width=width,
+        # height=height,
+        # width=width,
         num_inference_steps=num_inference_steps,
         guidance_scale=6.0,
-    ).frames[0]
+        use_dynamic_cfg=True,
+    )
+    frames = output.frames[0]
 
     del pipe
     torch.cuda.empty_cache()

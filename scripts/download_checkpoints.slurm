@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/download_checkpoints.sh
+# scripts/download_checkpoints.slurm
 #
 # Pre-downloads HuggingFace model checkpoints to /scratch/<user>/checkpoints/
 # before submitting generate_dataset.slurm batch jobs.
@@ -14,6 +14,17 @@
 # NOTE
 #   /scratch on Rivanna purges files after 90 days of inactivity.
 #   Re-run this script if your checkpoints have been purged.
+
+#SBATCH -A uva-mira
+#SBATCH -p standard
+#SBATCH -c 4
+#SBATCH -t 12:00:00
+#SBATCH -J download-checkpoints
+#SBATCH -o slurm_files/download_%j.out
+#SBATCH -e slurm_files/download_%j.err
+#SBATCH --mem=64000
+
+source .venv/bin/activate
 
 set -euo pipefail
 

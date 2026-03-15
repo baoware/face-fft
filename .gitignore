@@ -17,6 +17,8 @@ apptainer/face_fft.sif
 
 # Dataset files
 src/face_fft/data/raw_videos/
+src/face_fft/data/real/
+src/face_fft/data/synth_cogvideox/
 
 # Slurm output files
 slurm_files/

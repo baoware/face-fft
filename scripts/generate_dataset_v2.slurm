@@ -46,10 +46,10 @@ REAL_OUT_DIR="src/face_fft/data/real"
 SYNTH_OUT_DIR="src/face_fft/data/synth_${GENERATOR}"
 
 PROMPT="A highly realistic person's face, talking slightly, photorealistic video."
-NUM_FRAMES=16
-GEN_HEIGHT=480
-GEN_WIDTH=480
-NUM_INFERENCE_STEPS=20
+NUM_FRAMES=8
+GEN_HEIGHT=512
+GEN_WIDTH=512
+NUM_INFERENCE_STEPS=50
 
 # ---------------------------------------------------------------------------
 

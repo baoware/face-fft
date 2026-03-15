@@ -114,7 +114,7 @@ def main():
     # Define the generation function and default model
     if args.generator == "cogvideox":
         gen_fn = generate_synthetic_video_cogvideox
-        default_model = "THUDM/CogVideoX-2b"  # Or THUDM/CogVideoX1.5-5B-I2V
+        default_model = "zai-org/CogVideoX-5b-I2V"
     else:
         gen_fn = generate_synthetic_video_wan
         default_model = "Wan-AI/Wan2.2-I2V-A14B"
@@ -148,33 +148,42 @@ def main():
                 local_files_only=args.local_files_only,
             )
 
-            # Convert synth frames back to Tensor (T, H, W, C) [0, 255]
-            synth_frames_np = [
-                torch.from_numpy(np.array(img)) for img in synth_frames_pil
-            ]
+            # Handle if synth_frames_pil is already a tensor
+            if isinstance(synth_frames_pil, torch.Tensor):
+                print("[DEBUG] synth_frames_pil is already a tensor, using directly")
+                synth_tensor_raw = synth_frames_pil.to(torch.uint8)
+            else:
+                # Convert synth frames back to Tensor (T, H, W, C) [0, 255]
+                synth_frames_np = [
+                    torch.from_numpy(np.array(img)) for img in synth_frames_pil
+                ]
 
-            # Validate all frames have consistent dimensions
-            if len(synth_frames_np) == 0:
-                raise ValueError(f"Generation produced 0 frames for {vid_name}")
+                # Validate all frames have consistent dimensions
+                if len(synth_frames_np) == 0:
+                    raise ValueError(f"Generation produced 0 frames for {vid_name}")
 
-            first_shape = synth_frames_np[0].shape
-            for i, frame in enumerate(synth_frames_np):
-                if frame.shape != first_shape:
-                    raise ValueError(
-                        f"Frame {i} has shape {frame.shape}, expected {first_shape}. "
-                        f"Generator returned {len(synth_frames_np)} frames with inconsistent dimensions."
-                    )
+                first_shape = synth_frames_np[0].shape
+                for i, frame in enumerate(synth_frames_np):
+                    if frame.shape != first_shape:
+                        raise ValueError(
+                            f"Frame {i} has shape {frame.shape}, expected {first_shape}. "
+                            f"Generator returned {len(synth_frames_np)} frames with inconsistent dimensions."
+                        )
 
-            print(f"Generated {len(synth_frames_np)} frames with shape {first_shape}")
-            synth_tensor_raw = torch.stack(synth_frames_np, dim=0)
+                print(
+                    f"Generated {len(synth_frames_np)} frames with shape {first_shape}"
+                )
+                synth_tensor_raw = torch.stack(synth_frames_np, dim=0)
 
             # Read real video fully to match length
             real_tensor_raw, _, _ = io.read_video(str(vid_path), pts_unit="sec")
 
             # 3. Preprocess both to identical target dimensions (C, T, 256, 256)
+            print("Processing REAL video...")
             real_tensor = preprocess_video_tensor(
                 real_tensor_raw, target_size=(256, 256), num_frames=args.num_frames
             )
+            print("Processing SYNTH video...")
             synth_tensor = preprocess_video_tensor(
                 synth_tensor_raw, target_size=(256, 256), num_frames=args.num_frames
             )
