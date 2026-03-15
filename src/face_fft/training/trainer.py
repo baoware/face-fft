@@ -33,6 +33,9 @@ class Trainer:
         )
 
     def train_epoch(self) -> float:
+        if not self.train_loader or len(self.train_loader.dataset) == 0:
+            raise ValueError("Training loader is empty. Cannot train without data.")
+
         self.model.train()
         total_loss = 0.0
 
@@ -54,6 +57,9 @@ class Trainer:
         return total_loss / len(self.train_loader.dataset)
 
     def validate(self) -> float:
+        if not self.val_loader or len(self.val_loader.dataset) == 0:
+            return float("inf")
+
         self.model.eval()
         total_loss = 0.0
 

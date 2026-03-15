@@ -115,7 +115,7 @@ def generate_synthetic_video_cogvideox(
 def generate_synthetic_video_wan(
     image: Image.Image,
     prompt: str,
-    model_id: str = "Wan-AI/Wan2.2-I2V-A14B",
+    model_id: str = "Wan-AI/Wan2.2-I2V-A14B-Diffusers",
     height: int = 480,
     width: int = 480,
     num_inference_steps: int = 20,

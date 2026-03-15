@@ -117,13 +117,13 @@ def main():
         default_model = "zai-org/CogVideoX-5b-I2V"
     else:
         gen_fn = generate_synthetic_video_wan
-        default_model = "Wan-AI/Wan2.2-I2V-A14B"
+        default_model = "Wan-AI/Wan2.2-I2V-A14B-Diffusers"
 
     model_id = args.model_id if args.model_id else default_model
 
-    for vid_path in tqdm(videos):
+    for i, vid_path in tqdm(enumerate(videos), total=len(videos)):
         vid_name = vid_path.stem
-        pt_filename = f"{vid_name}_{args.generator}.pt"
+        pt_filename = f"{vid_name}_{args.generator}_{i}.pt"
         real_out_path = Path(args.real_out_dir) / pt_filename
         synth_out_path = Path(args.synth_out_dir) / pt_filename
 

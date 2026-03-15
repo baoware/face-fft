@@ -30,7 +30,7 @@ set -euo pipefail
 
 CHECKPOINT_DIR="${CHECKPOINT_DIR:-/scratch/${USER}/checkpoints}"
 MODEL_COGVIDEOX="zai-org/CogVideoX-5b-I2V"
-MODEL_WAN="Wan-AI/Wan2.2-I2V-A14B"
+MODEL_WAN="Wan-AI/Wan2.2-I2V-A14B-Diffusers"
 
 echo ""
 echo "==> face-fft checkpoint pre-downloader"
