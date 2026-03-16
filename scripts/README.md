@@ -161,6 +161,13 @@ squeue -u ${USER} | grep face-fft
 tail -f slurm_files/generate_*.out
 ```
 
+**NOTE**: It might be beneficial to authenticate into HuggingFace API first before running this script multiple times. One such way is by using `HF_TOKEN` environment variable:
+
+```bash
+export HF_TOKEN=hf_XXXX
+sbatch scripts/generate_dataset.slurm
+```
+
 #### Step 3: Submit Training + Evaluation Job
 
 Once dataset generation completes:

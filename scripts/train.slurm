@@ -50,6 +50,7 @@ SAVE_PATH="${CHECKPOINT_DIR}/best_model_cogvideox.pt"
 
 # ---------------------------------------------------------------------------
 
+mkdir -p ${CHECKPOINT_DIR}
 mkdir -p slurm_files
 echo "Job started: $(date)"
 echo "Node: $(hostname)"
