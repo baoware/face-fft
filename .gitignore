@@ -22,3 +22,6 @@ src/face_fft/data/synth_cogvideox/
 
 # Slurm output files
 slurm_files/
+
+# Local files
+local/

@@ -13,9 +13,9 @@
 # USAGE
 #   sbatch scripts/generate_dataset.slurm
 
-#SBATCH -A ml_at_uva
+#SBATCH -A uva-mira
 #SBATCH -p gpu
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:1
 #SBATCH -c 4
 #SBATCH -t 72:00:00
 #SBATCH -J face-fft-generate
@@ -24,47 +24,41 @@
 #SBATCH --mem=256000
 
 module purge
-module load apptainer
+
+source .venv/bin/activate
 
 # ---------------------------------------------------------------------------
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
-CODEDIR="/home/${USER}/home/face-fft"
-IMAGE="${CODEDIR}/apptainer/face_fft.sif"
+export HF_HOME=/scratch/$USER/checkpoints
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+export PYTHONPATH=/home/$USER/home/face-fft/src
+
 CHECKPOINT_DIR="/scratch/${USER}/checkpoints/hub"
 
-# Generator: "cogvideox" or "wan"
-GENERATOR="cogvideox"
+# Run for both generators via for loop:
+for GENERATOR in "cogvideox" "wan"; do
 
-SOURCE_DIR="/mnt/code/src/face_fft/data/raw_videos"
-REAL_OUT_DIR="/mnt/code/src/face_fft/data/real"
-SYNTH_OUT_DIR="/mnt/code/src/face_fft/data/synth_${GENERATOR}"
+    SOURCE_DIR="src/face_fft/data/raw_videos"
+    REAL_OUT_DIR="src/face_fft/data/real"
+    SYNTH_OUT_DIR="src/face_fft/data/synth_${GENERATOR}"
 
-PROMPT="A highly realistic person's face, talking slightly, photorealistic video."
-NUM_FRAMES=16
-GEN_HEIGHT=480
-GEN_WIDTH=480
-NUM_INFERENCE_STEPS=20
+    PROMPT="A highly realistic person's face, talking slightly, photorealistic video."
+    NUM_FRAMES=8
+    GEN_HEIGHT=512
+    GEN_WIDTH=512
+    NUM_INFERENCE_STEPS=50
 
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
 
-mkdir -p slurm_files
-echo "Job started: $(date)"
-echo "Node: $(hostname)"
-echo "Generator: ${GENERATOR}"
+    mkdir -p slurm_files
+    echo "Job started: $(date)"
+    echo "Node: $(hostname)"
+    echo "Generator: ${GENERATOR}"
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --bind "${CHECKPOINT_DIR}:/mnt/checkpoints" \
-    --env HF_HOME=/mnt/checkpoints \
-    --env TRANSFORMERS_OFFLINE=1 \
-    --env HF_DATASETS_OFFLINE=1 \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/generate_dataset.py \
+    python3 bin/generate_dataset.py \
         --source_dir      "${SOURCE_DIR}" \
         --real_out_dir    "${REAL_OUT_DIR}" \
         --synth_out_dir   "${SYNTH_OUT_DIR}" \
@@ -74,7 +68,9 @@ ${APPTAINER} exec \
         --gen_height      "${GEN_HEIGHT}" \
         --gen_width       "${GEN_WIDTH}" \
         --num_inference_steps "${NUM_INFERENCE_STEPS}" \
-        --cache_dir       /mnt/checkpoints \
+        --cache_dir       "${CHECKPOINT_DIR}" \
         --local_files_only
 
-echo "Job finished: $(date)"
+    echo "Job finished: $(date)"
+
+done

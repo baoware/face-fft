@@ -23,6 +23,7 @@
 #SBATCH -o slurm_files/download_%j.out
 #SBATCH -e slurm_files/download_%j.err
 #SBATCH --mem=64000
+#SBATCH --export=HF_TOKEN
 
 source .venv/bin/activate
 

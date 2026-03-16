@@ -25,20 +25,22 @@
 #SBATCH --mem=64000
 
 module purge
-module load apptainer
+
+source .venv/bin/activate
 
 # ---------------------------------------------------------------------------
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
-CODEDIR="/home/${USER}/home/face-fft"
-IMAGE="${CODEDIR}/apptainer/face_fft.sif"
+export HF_HOME=/scratch/$USER/checkpoints/hub
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+export PYTHONPATH=/home/$USER/home/face-fft/src
 
-REAL_DATA_DIR="/mnt/code/src/face_fft/data/real"
-SYNTH_COGVIDEOX_DIR="/mnt/code/src/face_fft/data/synth_cogvideox"
-SYNTH_WAN_DIR="/mnt/code/src/face_fft/data/synth_wan"
-CHECKPOINT_DIR="/mnt/code/checkpoints"
+REAL_DATA_DIR="src/face_fft/data/real"
+SYNTH_COGVIDEOX_DIR="src/face_fft/data/synth_cogvideox"
+SYNTH_WAN_DIR="src/face_fft/data/synth_wan"
+CHECKPOINT_DIR="checkpoints"
 
 EPOCHS=20
 BATCH_SIZE=16
@@ -60,18 +62,13 @@ echo ""
 echo "==> [1/3] Training on CogVideoX synthetic data..."
 echo ""
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/train.py \
-        --real_dir    "${REAL_DATA_DIR}" \
-        --synth_dir   "${SYNTH_COGVIDEOX_DIR}" \
-        --epochs      "${EPOCHS}" \
-        --batch_size  "${BATCH_SIZE}" \
-        --lr          "${LR}" \
-        --save_path   "${SAVE_PATH}"
+python3 bin/train.py \
+    --real_dir    "${REAL_DATA_DIR}" \
+    --synth_dir   "${SYNTH_COGVIDEOX_DIR}" \
+    --epochs      "${EPOCHS}" \
+    --batch_size  "${BATCH_SIZE}" \
+    --lr          "${LR}" \
+    --save_path   "${SAVE_PATH}"
 
 # =============================================================================
 # STEP 2: EVALUATE — in-distribution (CogVideoX → CogVideoX)
@@ -81,16 +78,11 @@ echo ""
 echo "==> [2/3] Evaluating in-distribution (CogVideoX test split)..."
 echo ""
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/evaluate.py \
-        --real_dir   "${REAL_DATA_DIR}" \
-        --synth_dir  "${SYNTH_COGVIDEOX_DIR}" \
-        --model_path "${SAVE_PATH}" \
-        --batch_size "${BATCH_SIZE}"
+python3 bin/evaluate.py \
+    --real_dir   "${REAL_DATA_DIR}" \
+    --synth_dir  "${SYNTH_COGVIDEOX_DIR}" \
+    --model_path "${SAVE_PATH}" \
+    --batch_size "${BATCH_SIZE}"
 
 # =============================================================================
 # STEP 3: EVALUATE — cross-generator generalization (CogVideoX model → Wan data)
@@ -102,16 +94,11 @@ echo ""
 echo "==> [3/3] Evaluating cross-generator generalization (CogVideoX model → Wan data)..."
 echo ""
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/evaluate.py \
-        --real_dir   "${REAL_DATA_DIR}" \
-        --synth_dir  "${SYNTH_WAN_DIR}" \
-        --model_path "${SAVE_PATH}" \
-        --batch_size "${BATCH_SIZE}"
+python3 bin/evaluate.py \
+    --real_dir   "${REAL_DATA_DIR}" \
+    --synth_dir  "${SYNTH_WAN_DIR}" \
+    --model_path "${SAVE_PATH}" \
+    --batch_size "${BATCH_SIZE}"
 
 # =============================================================================
 
