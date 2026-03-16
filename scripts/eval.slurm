@@ -31,13 +31,15 @@
 #SBATCH --mem=64000
 
 module purge
-module load apptainer
+
+source .venv/bin/activate
 
 # ---------------------------------------------------------------------------
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-APPTAINER="/apps/software/standard/core/apptainer/1.3.4/bin/apptainer"
+export PYTHONPATH=/home/$USER/home/face-fft/src
+
 CODEDIR="/home/${USER}/home/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
 
@@ -64,16 +66,11 @@ echo ""
 echo "==> [1/2] Evaluating in-distribution (CogVideoX test split)..."
 echo ""
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/evaluate.py \
-        --real_dir   "${REAL_DATA_DIR}" \
-        --synth_dir  "${SYNTH_COGVIDEOX_DIR}" \
-        --model_path "${MODEL_PATH}" \
-        --batch_size "${BATCH_SIZE}"
+python3 bin/evaluate.py \
+    --real_dir   "${REAL_DATA_DIR}" \
+    --synth_dir  "${SYNTH_COGVIDEOX_DIR}" \
+    --model_path "${MODEL_PATH}" \
+    --batch_size "${BATCH_SIZE}"
 
 # =============================================================================
 # STEP 2: EVALUATE — cross-generator generalization (CogVideoX model → Wan data)
@@ -85,16 +82,11 @@ echo ""
 echo "==> [2/2] Evaluating cross-generator generalization (CogVideoX model → Wan data)..."
 echo ""
 
-${APPTAINER} exec \
-    --nv \
-    --bind "${CODEDIR}:/mnt/code" \
-    --env PYTHONPATH=/mnt/code/src \
-    "${IMAGE}" \
-    python3 /mnt/code/bin/evaluate.py \
-        --real_dir   "${REAL_DATA_DIR}" \
-        --synth_dir  "${SYNTH_WAN_DIR}" \
-        --model_path "${MODEL_PATH}" \
-        --batch_size "${BATCH_SIZE}"
+python3 /mnt/code/bin/evaluate.py \
+    --real_dir   "${REAL_DATA_DIR}" \
+    --synth_dir  "${SYNTH_WAN_DIR}" \
+    --model_path "${MODEL_PATH}" \
+    --batch_size "${BATCH_SIZE}"
 
 # =============================================================================
 
