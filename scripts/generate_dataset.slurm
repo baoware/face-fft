@@ -15,7 +15,7 @@
 
 #SBATCH -A uva-mira
 #SBATCH -p gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH -c 4
 #SBATCH -t 72:00:00
 #SBATCH -J face-fft-generate
