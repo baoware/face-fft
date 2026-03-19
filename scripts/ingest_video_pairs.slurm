@@ -40,7 +40,7 @@ source .venv/bin/activate
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-export PYTHONPATH=/home/$USER/home/face-fft/src
+export PYTHONPATH=/home/$USER/face-fft/src
 
 # Short identifier for this external dataset (no spaces)
 DATASET_NAME="faceforensics"
