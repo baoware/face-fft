@@ -35,7 +35,7 @@ source .venv/bin/activate
 export HF_HOME=/scratch/$USER/checkpoints/hub
 export TRANSFORMERS_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
-export PYTHONPATH=/home/$USER/home/face-fft/src
+export PYTHONPATH=/home/$USER/face-fft/src
 
 REAL_DATA_DIR="src/face_fft/data/real"
 SYNTH_COGVIDEOX_DIR="src/face_fft/data/synth_cogvideox"
