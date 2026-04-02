@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from face_fft.features.spectral import SpatiotemporalFFT
-from face_fft.models.classifier import CompactSpectralCNN
+from face_fft.models.classifier import CompactSpectralCNN, SpectralResNet3D
 
 
 class FaceFFTPipeline(nn.Module):
@@ -22,14 +22,23 @@ class FaceFFTPipeline(nn.Module):
         in_channels: int = 3,
         base_channels: int = 16,
         num_classes: int = 1,
-    ):
+        model_type: str = "resnet",
+    ):  
         super().__init__()
         self.fft = SpatiotemporalFFT(log_scale=log_scale)
-        self.classifier = CompactSpectralCNN(
-            in_channels=in_channels,
-            base_channels=base_channels,
-            num_classes=num_classes,
-        )
+
+        if model_type == "resnet":
+            self.classifier = SpectralResNet3D(
+                in_channels=in_channels, 
+                num_classes=num_classes,
+                pretrained=False
+            )
+        else:
+            self.classifier = CompactSpectralCNN(
+                in_channels=in_channels,
+                base_channels=base_channels,
+                num_classes=num_classes,
+            )
 
     def forward(self, x):
         return self.classifier(self.fft(x))
