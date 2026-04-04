@@ -83,8 +83,14 @@ def main():
         raise FileNotFoundError()
 
     # auto-discover models
-    all_folders =[d for d in os.listdir(DATA_ROOT) if os.path.isdir(os.path.join(DATA_ROOT, d))]
-    SYNTH_MODELS =[d for d in all_folders if d != "Pexels" and not d.startswith(".")]
+    SYNTH_MODELS =[
+        "Veo", 
+        "RunwayML", 
+        "StableDiffusion", 
+        "CogVideoX5B", 
+        "VideoPoet", 
+        "BDAnimateDiffLightning"
+    ]
     
     print(f"Loading ResNet3D model on {DEVICE}...")
     print("----------")
