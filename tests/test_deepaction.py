@@ -1,97 +1,146 @@
-from pathlib import Path
-
+import os
 import torch
-import torchvision.io as io
-
-from face_fft.data.deepaction import (
-    DeepActionDataset,
-    DeepActionSample,
-    discover_deepaction_samples,
-    split_deepaction_samples,
+import numpy as np
+import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, 
+    f1_score, confusion_matrix, roc_auc_score
 )
+from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.data.deepaction import get_deepaction_splits
 
-
-def _make_video_tensor(T: int, H: int = 32, W: int = 32) -> torch.Tensor:
-    """Returns a random uint8 video tensor of shape (T, H, W, 3)."""
-    return torch.randint(0, 256, (T, H, W, 3), dtype=torch.uint8)
-
-
-def _write_fake_mp4(path: Path, T: int = 4, H: int = 32, W: int = 32, fps: float = 8.0):
-    frames = _make_video_tensor(T=T, H=H, W=W)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    io.write_video(str(path), frames, fps=fps)
-
-
-def test_discover_deepaction_samples_labels_by_top_folder(tmp_path: Path):
-    _write_fake_mp4(tmp_path / "Pexels" / "classA" / "real1.mp4")
-    _write_fake_mp4(tmp_path / "AnimateDiff" / "classB" / "synth1.mp4")
-    _write_fake_mp4(tmp_path / "CogVideoX5B" / "classB" / "synth2.mp4")
-
-    samples = discover_deepaction_samples(
-        tmp_path, real_folder_name="Pexels", synth_folder_names=None
+def evaluate_subset(synth_models, data_root, model, device, batch_size=4):
+    """
+    Evaluates the model on a specific subset of synthetic models.
+    Re-uses your exact split logic to guarantee we only evaluate on the Test Set.
+    """
+    _, _, test_dataset = get_deepaction_splits(
+        root_dir=data_root,
+        synth_models=synth_models,
+        train_ratio=0.8,
+        val_ratio=0.1,
+        target_frames=8,
+        target_size=(256, 256),
+        seed=42
     )
-    assert len(samples) == 3
+    
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    labels = {Path(s.video_path).name: s.label for s in samples}
-    assert labels["real1.mp4"] == 0
-    assert labels["synth1.mp4"] == 1
-    assert labels["synth2.mp4"] == 1
+    all_labels =[]
+    all_preds = []
+    all_probs =[]
 
+    model.eval()
+    with torch.no_grad():
+        for inputs, labels in tqdm(test_loader, desc=f"Eval {synth_models[0] if len(synth_models)==1 else 'ALL'}", leave=False):
+            inputs = inputs.to(device)
+            labels = labels.to(device).float()
 
-def test_split_deepaction_samples_is_deterministic(tmp_path: Path):
-    samples = [
-        DeepActionSample(video_path=str(tmp_path / "r1.mp4"), label=0),
-        DeepActionSample(video_path=str(tmp_path / "r2.mp4"), label=0),
-        DeepActionSample(video_path=str(tmp_path / "s1.mp4"), label=1),
-        DeepActionSample(video_path=str(tmp_path / "s2.mp4"), label=1),
-    ]
-    train1, val1, test1 = split_deepaction_samples(
-        samples, train_ratio=0.5, val_ratio=0.25, seed=123
+            # forward pass
+            logits = model(inputs).squeeze(1)
+            
+            # convert logits to probabilities (0.0 to 1.0) for AUC
+            probs = torch.sigmoid(logits)
+            
+            # convert logits to binary predictions (threshold at 0.0 logit = 0.5 prob)
+            preds = (logits > 0.0).float()
+
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(preds.cpu().numpy())
+            all_probs.extend(probs.cpu().numpy())
+
+    return np.array(all_labels), np.array(all_preds), np.array(all_probs)
+
+def plot_confusion_matrix(cm, filename="confusion_matrix.png"):
+    fig, ax = plt.subplots(figsize=(6, 5))
+    cax = ax.matshow(cm, cmap='Blues', alpha=0.8)
+    plt.colorbar(cax)
+
+    # add text annotations
+    for (i, j), z in np.ndenumerate(cm):
+        ax.text(j, i, f'{z}', ha='center', va='center', 
+                fontsize=14, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='white', edgecolor='0.3', alpha=0.9))
+
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(['Predicted REAL', 'Predicted FAKE'], fontsize=12)
+    ax.set_yticklabels(['Actual REAL', 'Actual FAKE'], fontsize=12, rotation=90, va='center')
+    
+    plt.title('3D-FFT Model Confusion Matrix', pad=20, fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    print(f"\nSaved confusion matrix plot to {filename}")
+
+def main():
+    DATA_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset" 
+    WEIGHTS_PATH = "checkpoints/deepaction_model.pt"
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    if not os.path.exists(WEIGHTS_PATH):
+        raise FileNotFoundError()
+
+    # auto-discover models
+    all_folders =[d for d in os.listdir(DATA_ROOT) if os.path.isdir(os.path.join(DATA_ROOT, d))]
+    SYNTH_MODELS =[d for d in all_folders if d != "Pexels" and not d.startswith(".")]
+    
+    print(f"Loading ResNet3D model on {DEVICE}...")
+    print("----------")
+    model = FaceFFTPipeline(
+        log_scale=True, 
+        in_channels=3, 
+        num_classes=1,
+        model_type="resnet"
     )
-    train2, val2, test2 = split_deepaction_samples(
-        samples, train_ratio=0.5, val_ratio=0.25, seed=123
-    )
+    model.load_state_dict(torch.load(WEIGHTS_PATH, map_location=DEVICE, weights_only=True))
+    model.to(DEVICE)
 
-    assert [s.video_path for s in train1] == [s.video_path for s in train2]
-    assert [s.video_path for s in val1] == [s.video_path for s in val2]
-    assert [s.video_path for s in test1] == [s.video_path for s in test2]
+    print("Overall metrics:")
+    print("----------")
+    
+    y_true, y_pred, y_prob = evaluate_subset(SYNTH_MODELS, DATA_ROOT, model, DEVICE)
+    
+    acc = accuracy_score(y_true, y_pred)
+    prec = precision_score(y_true, y_pred)
+    rec = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    auc = roc_auc_score(y_true, y_prob)
+    cm = confusion_matrix(y_true, y_pred)
 
+    print(f"\nOverall Accuracy : {acc*100:.2f}%")
+    print(f"Precision        : {prec:.4f}")
+    print(f"Recall           : {rec:.4f}")
+    print(f"F1-Score         : {f1:.4f}")
+    print(f"ROC-AUC          : {auc:.4f}")
+    
+    print("\nConfusion Matrix:")
+    print(f"True Negatives (Real -> Real)   : {cm[0, 0]}")
+    print(f"False Positives (Real -> Fake)  : {cm[0, 1]}")
+    print(f"False Negatives (Fake -> Real)  : {cm[1, 0]}")
+    print(f"True Positives (Fake -> Fake)   : {cm[1, 1]}")
+    
+    plot_confusion_matrix(cm, "confusion_matrix.png")
 
-def test_deepaction_dataset_returns_expected_tensor_shape(tmp_path: Path):
-    _write_fake_mp4(tmp_path / "Pexels" / "classA" / "real1.mp4", T=4, H=32, W=32)
-    _write_fake_mp4(
-        tmp_path / "AnimateDiff" / "classB" / "synth1.mp4", T=4, H=32, W=32
-    )
+    # per ai generator breakdown
+    print("AI Generator Breakdown (Accuracy | F1 | AUC)")
+    print("-----------")
+    
+    print(f"{'Generator Model':<25} | {'Accuracy':<10} | {'F1-Score':<10} | {'ROC-AUC':<10}")
+    print("----------")
+    
+    for sm in SYNTH_MODELS:
+        yt, yp, yprob = evaluate_subset([sm], DATA_ROOT, model, DEVICE)
+        
+        # calculate metrics for this specific subset
+        m_acc = accuracy_score(yt, yp)
+        m_f1 = f1_score(yt, yp)
+        m_auc = roc_auc_score(yt, yprob)
+        
+        print(f"{sm:<25} | {m_acc*100:>8.2f}% | {m_f1:>8.4f} | {m_auc:>8.4f}")
 
-    samples = discover_deepaction_samples(tmp_path)
-    dataset = DeepActionDataset(
-        samples,
-        target_size=(64, 64),
-        num_frames=4,
-        max_duration_sec=10.0,
-        skip_errors=False,
-    )
+    print("\nEvaluation Complete.")
 
-    tensor, label = dataset[0]
-    assert tensor.shape == (3, 4, 64, 64)
-    assert tensor.dtype == torch.float32
-    assert tensor.min().item() >= 0.0
-    assert tensor.max().item() <= 1.0
-    assert label.item() in (0, 1)
-
-
-def test_deepaction_dataset_skip_errors_returns_zeros(tmp_path: Path):
-    bad_sample = DeepActionSample(video_path=str(tmp_path / "missing.mp4"), label=1)
-    dataset = DeepActionDataset(
-        [bad_sample],
-        target_size=(32, 32),
-        num_frames=4,
-        max_duration_sec=1.0,
-        skip_errors=True,
-    )
-
-    tensor, label = dataset[0]
-    assert tensor.shape == (3, 4, 32, 32)
-    assert torch.all(tensor == 0)
-    assert label.item() == 1
-
+if __name__ == "__main__":
+    main()

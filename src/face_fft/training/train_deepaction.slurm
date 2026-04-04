@@ -4,7 +4,8 @@
 #SBATCH --gres=gpu:a100:1                              
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8                
-#SBATCH --mem=64G                        
+#SBATCH --mem=64G                
+#SBATCH --time=36:00:00            
 #SBATCH --output=logs/train_%j.out            
 
 # create a logs directory if it doesn't exist to store the output files
