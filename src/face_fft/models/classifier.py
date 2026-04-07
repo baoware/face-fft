@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.models.video import r3d_18, R3D_18_Weights
+from torchvision.models.video import r3d_18, mc3_18, r2plus1d_18
 
 
 class CompactSpectralCNN(nn.Module):
@@ -111,4 +111,50 @@ class SpectralResNet3D(nn.Module):
         Returns:
             Logit predictions, shape (B, 1)
         """
+        return self.backbone(x)
+        
+class SpectralVideoCNN(nn.Module):
+    """
+    A unified wrapper for torchvision 3D models adapted for 3D-FFT Spectral classification.
+    Supports 'r3d_18', 'mc3_18', and 'r2plus1d_18'.
+    """
+    def __init__(
+        self, 
+        model_name: str = "r3d_18",
+        in_channels: int = 3, 
+        num_classes: int = 1
+    ):
+        super().__init__()
+        
+        # Load the requested backbone (untrained, since FFT != RGB)
+        if model_name == "r3d_18":
+            self.backbone = r3d_18(weights=None)
+        elif model_name == "mc3_18":
+            self.backbone = mc3_18(weights=None)
+        elif model_name == "r2plus1d_18":
+            self.backbone = r2plus1d_18(weights=None)
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+            
+        # Patch the input channel depth if not 3
+        if in_channels != 3:
+            original_conv = self.backbone.stem[0]
+            self.backbone.stem[0] = nn.Conv3d(
+                in_channels, 
+                original_conv.out_channels, 
+                kernel_size=original_conv.kernel_size, 
+                stride=original_conv.stride, 
+                padding=original_conv.padding, 
+                bias=False
+            )
+            
+        # Patch the classification head for Binary Classification + Dropout
+        # Use aggressive dropout to combat overfitting on small datasets
+        in_features = self.backbone.fc.in_features
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(p=0.5),
+            nn.Linear(in_features, num_classes)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.backbone(x)

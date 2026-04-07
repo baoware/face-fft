@@ -4,7 +4,6 @@ from torch.utils.data import DataLoader
 
 from face_fft.models.pipeline import FaceFFTPipeline
 from face_fft.training.trainer import Trainer
-
 from face_fft.data.deepaction import get_deepaction_splits
 
 def main():
