@@ -4,8 +4,7 @@
 #SBATCH --gres=gpu:a100:1                              
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8                
-#SBATCH --mem=64G                
-#SBATCH --time=48:00:00            
+#SBATCH --mem=64G                         
 #SBATCH --output=logs/run_ablation_%j.out            
 
 # create a logs directory if it doesn't exist to store the output files
@@ -21,6 +20,6 @@ cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 # run training script
-python -m face_fft.training.run_ablation
+PYTHONPATH=src python -m face_fft.training.run_ablation
 
 echo "Job finished at $(date)"

@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from face_fft.models.pipeline import FaceFFTPipeline
 from face_fft.training.trainer import Trainer
 from face_fft.data.deepaction import get_deepaction_splits
-from tests.test_deepaction import evaluate_subset
+from face_fft.eval.deepaction_evaluator import evaluate_subset
 
 def main():
     DATA_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset" 

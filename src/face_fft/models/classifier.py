@@ -2,6 +2,24 @@ import torch
 import torch.nn as nn
 from torchvision.models.video import r3d_18, mc3_18, r2plus1d_18
 
+class LearnableSpectralMask(nn.Module):
+    """
+    A dynamic, learnable frequency filter. 
+    It acts as a self-attention mechanism over the 3D-FFT spectrum, 
+    learning to dynamically suppress the DC center (natural physics) 
+    and highlight the generative grid harmonics.
+    """
+    def __init__(self, T=8, H=256, W=256):
+        super().__init__()
+        # Initialize a tensor of ones (letting all frequencies pass initially)
+        # Shape: (1, 1, T, H, W) so it broadcasts across batches and RGB channels
+        self.mask = nn.Parameter(torch.ones(1, 1, T, H, W))
+        
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Use a sigmoid to ensure the mask acts as a strict filter (values 0.0 to 1.0)
+        # x shape: (B, C, T, H, W)
+        filtered_spectrum = x * torch.sigmoid(self.mask)
+        return filtered_spectrum
 
 class CompactSpectralCNN(nn.Module):
     """
@@ -23,6 +41,8 @@ class CompactSpectralCNN(nn.Module):
             num_classes: Number of output dimension. 1 for simple binary BCE loss.
         """
         super().__init__()
+
+        self.spectral_filter = LearnableSpectralMask(T=8, H=256, W=256)
 
         # Lightweight 3D Volumetric Feature Extractor
         self.features = nn.Sequential(
@@ -62,56 +82,11 @@ class CompactSpectralCNN(nn.Module):
         Returns:
             torch.Tensor: Logit predictions, shape (B, num_classes)
         """
-        feats = self.features(x)
+        x_filtered = self.spectral_filter(x)
+
+        feats = self.features(x_filtered)
         logits = self.classifier(feats)
         return logits
-
-class SpectralResNet3D(nn.Module):
-    """
-    A deeper 3D ResNet classifier designed to detect faint, 
-    multi-scale upsampling artifacts in the 3D-FFT domain.
-    """
-    def __init__(
-        self, 
-        in_channels: int = 3, 
-        num_classes: int = 1, 
-        pretrained: bool = False
-    ):
-        super().__init__()
-        
-        # load the base 3D ResNet-18 architecture
-        weights = R3D_18_Weights.DEFAULT if pretrained else None
-        self.backbone = r3d_18(weights=weights)
-        
-        # modify the input layer if we aren't using 3 channels
-        if in_channels != 3:
-            original_conv = self.backbone.stem[0]
-            self.backbone.stem[0] = nn.Conv3d(
-                in_channels, 
-                original_conv.out_channels, 
-                kernel_size=original_conv.kernel_size, 
-                stride=original_conv.stride, 
-                padding=original_conv.padding, 
-                bias=False
-            )
-            
-        # replace the final fully connected layer for binary classification
-        # add heavy dropout (0.5) because 3D ResNets have 33M+ parameters 
-        # and are prone to overfitting on smaller datasets
-        in_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Sequential(
-            nn.Dropout(p=0.5),
-            nn.Linear(in_features, num_classes)
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            x: Output from SpatiotemporalFFT, shape (B, C, T, H, W)
-        Returns:
-            Logit predictions, shape (B, 1)
-        """
-        return self.backbone(x)
         
 class SpectralVideoCNN(nn.Module):
     """
@@ -125,6 +100,8 @@ class SpectralVideoCNN(nn.Module):
         num_classes: int = 1
     ):
         super().__init__()
+
+        self.spectral_filter = LearnableSpectralMask(T=8, H=256, W=256)
         
         # Load the requested backbone (untrained, since FFT != RGB)
         if model_name == "r3d_18":

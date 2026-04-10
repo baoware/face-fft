@@ -21,6 +21,6 @@ cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 # run training script
-python -m face_fft.training.train_deepaction
+PYTHONPATH=src python -m face_fft.training.train_deepaction
 
 echo "Job finished at $(date)"
