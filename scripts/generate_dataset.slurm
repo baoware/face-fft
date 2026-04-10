@@ -34,7 +34,7 @@ source .venv/bin/activate
 export HF_HOME=/scratch/$USER/checkpoints
 export TRANSFORMERS_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
-export PYTHONPATH=/home/$USER/home/face-fft/src
+export PYTHONPATH=/home/$USER/face-fft/src
 
 CHECKPOINT_DIR="/scratch/${USER}/checkpoints/hub"
 

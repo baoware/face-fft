@@ -9,8 +9,11 @@ wheels/
 # Claude local files
 .claude/
 
-# Virtual environments
+# Environment files
+venv
 .venv
+.env
+env
 
 # Custom build script
 apptainer/run_build.sh
@@ -23,6 +26,11 @@ src/face_fft/data/raw_videos/
 src/face_fft/data/real/
 src/face_fft/data/synth_cogvideox/
 src/face_fft/data/synth_wan/
+src/face_fft/data/deepaction_dataset/
+src/face_fft/data/example/
+
+# Training logs
+src/face_fft/training/logs
 
 # Checkpoint files
 checkpoints/

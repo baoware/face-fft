@@ -3,7 +3,6 @@ import torch.nn as nn
 from face_fft.features.spectral import SpatiotemporalFFT
 from face_fft.models.classifier import CompactSpectralCNN
 
-
 class FaceFFTPipeline(nn.Module):
     """
     End-to-end Face-FFT detection pipeline.
@@ -22,14 +21,24 @@ class FaceFFTPipeline(nn.Module):
         in_channels: int = 3,
         base_channels: int = 16,
         num_classes: int = 1,
-    ):
+        model_type: str = "compact",
+    ):  
         super().__init__()
         self.fft = SpatiotemporalFFT(log_scale=log_scale)
-        self.classifier = CompactSpectralCNN(
-            in_channels=in_channels,
-            base_channels=base_channels,
-            num_classes=num_classes,
-        )
+
+        if model_type == "compact":
+            self.classifier = CompactSpectralCNN(
+                in_channels=in_channels,
+                base_channels=base_channels,
+                num_classes=num_classes,
+            )
+        else:
+            # handles the deep torchvision variants (r3d_18, mc3_18, r2plus1d_18)
+            self.classifier = SpectralVideoCNN(
+                model_name=model_type,
+                in_channels=in_channels, 
+                num_classes=num_classes
+            )
 
     def forward(self, x):
         return self.classifier(self.fft(x))

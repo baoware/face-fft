@@ -38,7 +38,7 @@ source .venv/bin/activate
 # Configuration — edit these to match your Rivanna paths
 # ---------------------------------------------------------------------------
 
-export PYTHONPATH=/home/$USER/home/face-fft/src
+export PYTHONPATH=/home/$USER/face-fft/src
 
 CODEDIR="/home/${USER}/home/face-fft"
 IMAGE="${CODEDIR}/apptainer/face_fft.sif"
