@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from face_fft.features.spectral import SpatiotemporalFFT
-from face_fft.models.classifier import CompactSpectralCNN
+from face_fft.models.classifier import CompactSpectralCNN, SpectralVideoCNN
 
 class FaceFFTPipeline(nn.Module):
     """

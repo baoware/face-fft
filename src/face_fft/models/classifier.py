@@ -85,6 +85,7 @@ class CompactSpectralCNN(nn.Module):
         x_filtered = self.spectral_filter(x)
 
         feats = self.features(x_filtered)
+        # feats = self.features(x)
         logits = self.classifier(feats)
         return logits
         
@@ -134,4 +135,7 @@ class SpectralVideoCNN(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.backbone(x)
+        x_filtered = self.spectral_filter(x)
+        return self.backbone(x_filtered)
+
+        # return self.backbone(x)

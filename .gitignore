@@ -40,3 +40,7 @@ slurm_files/
 
 # Local files
 local/
+
+# Images
+*.png
+

@@ -19,7 +19,7 @@ def main():
     ARCHITECTURES =["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
     
     BATCH_SIZE = 8
-    EPOCHS = 20
+    EPOCHS = 10
     LEARNING_RATE = 1e-3
     TARGET_FRAMES = 8
     TARGET_SIZE = (256, 256)
