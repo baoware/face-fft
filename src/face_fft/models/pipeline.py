@@ -41,4 +41,5 @@ class FaceFFTPipeline(nn.Module):
             )
 
     def forward(self, x):
-        return self.classifier(self.fft(x))
+        # return self.classifier(self.fft(x))
+        return self.classifier(x)
