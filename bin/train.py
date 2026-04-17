@@ -11,6 +11,7 @@ from face_fft.data.deepaction import (
     split_deepaction_samples,
 )
 from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.models.pipeline_mode import PipelineMode
 from face_fft.training.trainer import Trainer
 
 
@@ -84,8 +85,14 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="Random seed for splitting")
     parser.add_argument("--num_workers", type=int, default=2, help="DataLoader workers")
 
-    # Video-to-tensor parameters (only used for DeepAction mode).
-    parser.add_argument("--num_frames", type=int, default=16, help="Frames per clip")
+    # Video-to-tensor parameters: DeepAction decoding uses num_frames; the pipeline uses the
+    # same value as temporal_frames (required to match data when using fft_learnable_mask).
+    parser.add_argument(
+        "--num_frames",
+        type=int,
+        default=16,
+        help="Frames T in (C,T,H,W): DeepAction clip length; paired .pt mode uses this for the model.",
+    )
     parser.add_argument(
         "--target_size", type=int, default=256, help="Center-crop resolution (square)"
     )
@@ -106,6 +113,22 @@ def main():
         type=int,
         default=None,
         help="Optional cap on number of discovered training samples (DeepAction mode).",
+    )
+    parser.add_argument(
+        "--pipeline_mode",
+        type=str,
+        default=PipelineMode.FFT_LEARNABLE_MASK.value,
+        choices=[m.value for m in PipelineMode],
+        help=(
+            "pixel_baseline: raw pixels → CNN; fft_no_mask: 3D-FFT → CNN; "
+            "fft_learnable_mask: 3D-FFT → learnable spectral gate → CNN."
+        ),
+    )
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        default="compact",
+        help="Classifier backbone: compact | r3d_18 | mc3_18 | r2plus1d_18",
     )
     args = parser.parse_args()
 
@@ -207,7 +230,12 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    pipeline = FaceFFTPipeline()
+    pipeline = FaceFFTPipeline(
+        mode=args.pipeline_mode,
+        model_type=args.model_type,
+        temporal_frames=args.num_frames,
+        spatial_size=(args.target_size, args.target_size),
+    )
 
     # 3. Setup Trainer
     trainer = Trainer(

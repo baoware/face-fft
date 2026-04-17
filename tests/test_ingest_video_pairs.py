@@ -1,5 +1,8 @@
+import pytest
 import torch
 import torchvision.io as io
+
+pytest.importorskip("diffusers")
 
 from face_fft.data.dataset import PairedVideoDataset
 from face_fft.data.generate import preprocess_video_tensor
@@ -17,6 +20,7 @@ def _make_video_tensor(T: int, H: int = 64, W: int = 64) -> torch.Tensor:
 
 def _write_fake_mp4(path, T: int = 8, H: int = 64, W: int = 64, fps: float = 8.0):
     """Writes a minimal fake .mp4 to path using torchvision write_video."""
+    pytest.importorskip("av")
     frames = _make_video_tensor(T, H, W)  # (T, H, W, 3)
     io.write_video(str(path), frames, fps=fps)
 
