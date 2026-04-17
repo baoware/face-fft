@@ -9,6 +9,7 @@ from sklearn.metrics import (
     f1_score, confusion_matrix, roc_auc_score
 )
 from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.models.pipeline_mode import PipelineMode
 from face_fft.data.deepaction import get_deepaction_splits
 
 def evaluate_loader(model, dataloader, device, desc="Evaluating"):
@@ -77,7 +78,8 @@ def main():
     ]
 
     ARCHITECTURES =["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
-    
+    PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
+
     print(f"Using Device: {DEVICE}")
     print("Loading DeepAction Test Dataset...")
     _, _, test_dataset = get_deepaction_splits(
@@ -105,10 +107,13 @@ def main():
             
         # Initialize Pipeline
         model = FaceFFTPipeline(
-            log_scale=True, 
-            in_channels=3, 
+            log_scale=True,
+            in_channels=3,
             num_classes=1,
-            model_type=arch
+            model_type=arch,
+            mode=PIPELINE_MODE,
+            temporal_frames=8,
+            spatial_size=(256, 256),
         )
         
         # Load Weights

@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.models.pipeline_mode import PipelineMode
 from face_fft.training.trainer import Trainer
 from face_fft.data.deepaction import get_deepaction_splits
 
@@ -43,11 +44,14 @@ def main():
     print("Initializing FaceFFTPipeline...")
     print("----------")
     model = FaceFFTPipeline(
-        log_scale=True, 
-        in_channels=3, 
-        base_channels=16, 
+        log_scale=True,
+        in_channels=3,
+        base_channels=16,
         num_classes=1,
-        model_type="resnet"
+        model_type="r3d_18",
+        mode=PipelineMode.FFT_LEARNABLE_MASK,
+        temporal_frames=TARGET_FRAMES,
+        spatial_size=TARGET_SIZE,
     )
 
     # initialize the trainer

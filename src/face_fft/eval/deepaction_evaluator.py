@@ -9,6 +9,7 @@ from sklearn.metrics import (
     f1_score, confusion_matrix, roc_auc_score
 )
 from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.models.pipeline_mode import PipelineMode
 from face_fft.data.deepaction import get_deepaction_splits
 
 def evaluate_subset(synth_models, data_root, model, device, batch_size=4):
@@ -95,10 +96,13 @@ def main():
     print(f"Loading ResNet3D model on {DEVICE}...")
     print("----------")
     model = FaceFFTPipeline(
-        log_scale=True, 
-        in_channels=3, 
+        log_scale=True,
+        in_channels=3,
         num_classes=1,
-        model_type="resnet"
+        model_type="r3d_18",
+        mode=PipelineMode.FFT_LEARNABLE_MASK,
+        temporal_frames=8,
+        spatial_size=(256, 256),
     )
     model.load_state_dict(torch.load(WEIGHTS_PATH, map_location=DEVICE, weights_only=True))
     model.to(DEVICE)

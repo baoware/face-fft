@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 from face_fft.models.pipeline import FaceFFTPipeline
+from face_fft.models.pipeline_mode import PipelineMode
 from face_fft.training.trainer import Trainer
 from face_fft.data.deepaction import get_deepaction_splits
 from face_fft.eval.deepaction_evaluator import evaluate_subset
@@ -23,6 +24,8 @@ def main():
     LEARNING_RATE = 1e-3
     TARGET_FRAMES = 8
     TARGET_SIZE = (256, 256)
+    # Switch ablation: pixel_baseline | fft_no_mask | fft_learnable_mask
+    PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
     NUM_WORKERS = 0 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -51,7 +54,15 @@ def main():
         val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS, pin_memory=True)
 
         # Initialize Pipeline
-        model = FaceFFTPipeline(log_scale=True, in_channels=3, num_classes=1, model_type=arch)
+        model = FaceFFTPipeline(
+            log_scale=True,
+            in_channels=3,
+            num_classes=1,
+            model_type=arch,
+            mode=PIPELINE_MODE,
+            temporal_frames=TARGET_FRAMES,
+            spatial_size=TARGET_SIZE,
+        )
         
         # Parameter Count
         params = sum(p.numel() for p in model.parameters() if p.requires_grad)
