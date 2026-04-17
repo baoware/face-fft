@@ -42,7 +42,7 @@ class CompactSpectralCNN(nn.Module):
         """
         super().__init__()
 
-        # self.spectral_filter = LearnableSpectralMask(T=8, H=256, W=256)
+        self.spectral_filter = LearnableSpectralMask(T=8, H=256, W=256)
 
         # Lightweight 3D Volumetric Feature Extractor
         self.features = nn.Sequential(
@@ -82,10 +82,10 @@ class CompactSpectralCNN(nn.Module):
         Returns:
             torch.Tensor: Logit predictions, shape (B, num_classes)
         """
-        # x_filtered = self.spectral_filter(x)
+        x_filtered = self.spectral_filter(x)
 
-        # feats = self.features(x_filtered)
-        feats = self.features(x)
+        feats = self.features(x_filtered)
+        # feats = self.features(x)
         logits = self.classifier(feats)
         return logits
         
@@ -135,7 +135,7 @@ class SpectralVideoCNN(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x_filtered = self.spectral_filter(x)
-        # return self.backbone(x_filtered)
+        x_filtered = self.spectral_filter(x)
+        return self.backbone(x_filtered)
 
-        return self.backbone(x)
+        # return self.backbone(x)
