@@ -22,27 +22,45 @@ class GVB_FakesOnlyDataset(Dataset):
     def __getitem__(self, idx):
         video_path = self.video_paths[idx]
         try:
-            cap = cv2.VideoCapture(video_path)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            indices = np.linspace(0, total_frames - 1, self.target_frames).astype(int)
-            
+            # Instantly skip broken/empty downloads
+            if os.path.getsize(video_path) < 1024:
+                raise ValueError("File too small/corrupted")
+
+            # Force FFMPEG backend to stop the icvExtractPattern image-sequence crash
+            cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+            if not cap.isOpened():
+                raise ValueError("OpenCV failed to open.")
+
+            # Read sequentially (100x faster for MP4 than cap.set)
             frames =[]
-            for i in indices:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+            while True:
                 ret, frame = cap.read()
-                if ret:
-                    frame = cv2.resize(frame, (self.target_size[1], self.target_size[0]))
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frames.append(frame)
+                if not ret:
+                    break
+                
+                # Resize immediately to save RAM
+                frame = cv2.resize(frame, (self.target_size[1], self.target_size[0]))
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frames.append(frame)
+                
             cap.release()
 
-            if len(frames) == 0:
-                raise ValueError()
+            total_read = len(frames)
+            if total_read < self.target_frames:
+                raise ValueError(f"Only read {total_read} frames, needed {self.target_frames}.")
 
-            v = torch.from_numpy(np.array(frames)).permute(3, 0, 1, 2).float() / 255.0
-            return v, 1
-        except Exception:
-            return torch.zeros((3, self.target_frames, *self.target_size)), 1
+            # Subsample the sequentially read frames
+            indices = np.linspace(0, total_read - 1, self.target_frames).astype(int)
+            sampled_frames = [frames[i] for i in indices]
+
+            # Convert to tensor (C, T, H, W)
+            v = torch.from_numpy(np.array(sampled_frames)).permute(3, 0, 1, 2).float() / 255.0
+            
+            return v, 1, True  # Valid = True
+            
+        except Exception as e:
+            # Return empty tensor and set Valid = False
+            return torch.zeros((3, self.target_frames, *self.target_size)), 1, False
 
 def main():
     DATA_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/genvidbench_dataset" 
@@ -54,7 +72,7 @@ def main():
     # Options: PIXEL_BASELINE, FFT_NO_MASK, FFT_LEARNABLE_MASK
     PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
     
-    MAX_VIDS_PER_GEN = 70 
+    MAX_VIDS_PER_GEN = 200
 
     results = {arch: {} for arch in ARCHITECTURES}
 
@@ -108,9 +126,22 @@ def main():
             total_fakes = 0
             
             with torch.no_grad():
-                for inputs, _ in tqdm(test_loader, desc=f"   Detecting {gen}", leave=False):
-                    inputs = inputs.to(DEVICE)
-                    logits = model(inputs).squeeze(1)
+                # inputs, labels, is_valid
+                for inputs, _, is_valid in tqdm(test_loader, desc=f"   Detecting {gen}", leave=False):
+                    
+                    # Filter out corrupted videos from this batch
+                    valid_mask = is_valid.bool()
+                    if not valid_mask.any():
+                        continue # Skip if the entire batch is corrupted
+
+                    inputs = inputs[valid_mask].to(DEVICE)
+                    
+                    logits = model(inputs).squeeze(-1)
+                    
+                    # Edge case: If batch size drops to 1, squeeze removes the batch dimension.
+                    if logits.dim() == 0:
+                        logits = logits.unsqueeze(0)
+                        
                     preds = (logits > 0.0).float() # Prediction > 0 means FAKE
                     
                     caught_fakes += preds.sum().item()
