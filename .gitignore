@@ -27,7 +27,8 @@ src/face_fft/data/real/
 src/face_fft/data/synth_cogvideox/
 src/face_fft/data/synth_wan/
 src/face_fft/data/deepaction_dataset/
-src/face_fft/data/example/
+src/face_fft/data/genvidbench_dataset/
+
 
 # Training logs
 src/face_fft/training/logs

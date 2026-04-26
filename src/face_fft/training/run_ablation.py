@@ -25,7 +25,7 @@ def main():
     TARGET_FRAMES = 8
     TARGET_SIZE = (256, 256)
     # Switch ablation: pixel_baseline | fft_no_mask | fft_learnable_mask
-    PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
+    PIPELINE_MODE = PipelineMode.PIXEL_BASELINE
     NUM_WORKERS = 0 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 

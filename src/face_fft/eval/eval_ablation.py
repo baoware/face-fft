@@ -78,7 +78,7 @@ def main():
     ]
 
     ARCHITECTURES =["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
-    PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
+    PIPELINE_MODE = PipelineMode.PIXEL_BASELINE
 
     print(f"Using Device: {DEVICE}")
     print("Loading DeepAction Test Dataset...")
