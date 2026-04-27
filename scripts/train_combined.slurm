@@ -6,9 +6,9 @@
 #
 # PREREQUISITES
 #   1. DeepAction dataset extracted under:
-#        /scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset/
+#        src/face_fft/data/deepaction_dataset/
 #   2. GenVidBench synthetic archives extracted under:
-#        /scratch/rjr6zk/face-fft/src/face_fft/data/genvidbench_dataset/
+#        src/face_fft/data/genvidbench_dataset/
 #      (Run scripts/download_genvidbench_full.slurm first)
 #   3. HF_TOKEN set if network access is needed during the job.
 #
@@ -46,7 +46,6 @@ echo "Job started on $(hostname) at $(date)"
 echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
 echo "----------"
 
-cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 export HF_DATASETS_OFFLINE=1

@@ -98,7 +98,7 @@ def plot_confusion_matrix(cm, filename="confusion_matrix.png"):
 
 
 def main():
-    DATA_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset"
+    DATA_ROOT = "src/face_fft/data/deepaction_dataset"
     WEIGHTS_PATH = "checkpoints/deepaction_model.pt"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 

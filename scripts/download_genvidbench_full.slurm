@@ -42,7 +42,7 @@ PYTHONPATH=src python -m face_fft.data.download_genvidbench --list-files
 echo ""
 echo "==> Downloading synthetic archives + real-video archive ..."
 PYTHONPATH=src python -m face_fft.data.download_genvidbench \
-    --base_dir /scratch/rjr6zk/face-fft/src/face_fft/data \
+    --base_dir src/face_fft/data \
     --include-real
 
 echo "Job finished at $(date)"
