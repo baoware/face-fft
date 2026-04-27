@@ -15,6 +15,7 @@ dependencies = [
     "matplotlib>=3.10.8",
     "opencv-python-headless>=4.13.0.92",
     "pillow>=12.1.1",
+    "huggingface-hub>=1.6.0",
     "python-dotenv>=1.2.2",
     "scikit-learn>=1.8.0",
     "sentencepiece>=0.2.1",
@@ -28,7 +29,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "huggingface-hub>=1.6.0",
     "kaggle>=2.0.0",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
