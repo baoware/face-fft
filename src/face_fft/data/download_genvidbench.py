@@ -109,7 +109,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--base_dir",
-        default="/scratch/rjr6zk/face-fft/src/face_fft/data",
+        default="src/face_fft/data",
         help="Parent directory for the genvidbench_dataset/ folder",
     )
     parser.add_argument(
