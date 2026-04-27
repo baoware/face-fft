@@ -9,7 +9,7 @@ if not HF_TOKEN:
     raise ValueError()
 login(token=HF_TOKEN)
 
-save_directory = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset"
+save_directory = "src/face_fft/data/deepaction_dataset"
 os.makedirs(save_directory, exist_ok=True)
 
 snapshot_download(
@@ -17,7 +17,7 @@ snapshot_download(
     repo_type="dataset",
     local_dir=save_directory,
     local_dir_use_symlinks=False,
-    token=HF_TOKEN
+    token=HF_TOKEN,
 )
 
 print("Download complete.")

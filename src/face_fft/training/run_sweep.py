@@ -54,8 +54,8 @@ PIPELINE_MODES = [
 
 MODEL_TYPES = ["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
 
-DEEPACTION_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset"
-GENVIDBENCH_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/genvidbench_dataset"
+DEEPACTION_ROOT = "src/face_fft/data/deepaction_dataset"
+GENVIDBENCH_ROOT = "src/face_fft/data/genvidbench_dataset"
 
 CHECKPOINT_DIR = "checkpoints/sweep"
 CSV_PATH = "results/sweep_results.csv"

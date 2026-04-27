@@ -35,8 +35,8 @@ from face_fft.training.trainer import Trainer
 # Configuration — edit these for your run / ablation study
 # ---------------------------------------------------------------------------
 
-DEEPACTION_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/deepaction_dataset"
-GENVIDBENCH_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/genvidbench_dataset"
+DEEPACTION_ROOT = "src/face_fft/data/deepaction_dataset"
+GENVIDBENCH_ROOT = "src/face_fft/data/genvidbench_dataset"
 
 PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK  # change for ablation
 MODEL_TYPE = "r3d_18"  # change for ablation
