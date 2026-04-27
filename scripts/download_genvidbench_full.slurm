@@ -16,13 +16,15 @@
 # prints what IS available so you can locate the correct filename.
 # In that case train_combined.py will fall back to DeepAction Pexels reals.
 
-#SBATCH --job-name=gvb_download
-#SBATCH --partition=standard
+#SBATCH -A uva-mira
+#SBATCH -p standard
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=12:00:00
-#SBATCH --output=logs/gvb_download_%j.out
+#SBATCH -t 12:00:00
+#SBATCH -J genvidbench_download
+#SBATCH -o slurm_files/genvidbench_download_%j.out
+#SBATCH -e slurm_files/genvidbench_download_%j.err
 
 mkdir -p logs
 
