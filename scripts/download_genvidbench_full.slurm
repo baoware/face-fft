@@ -29,7 +29,6 @@ mkdir -p logs
 echo "Job started on $(hostname) at $(date)"
 echo "----------"
 
-cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 export HF_TOKEN="${HF_TOKEN}"          # set in your environment or .env file

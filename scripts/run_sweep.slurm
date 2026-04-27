@@ -40,7 +40,6 @@ echo "Job started on $(hostname) at $(date)"
 echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
 echo "----------"
 
-cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 export HF_DATASETS_OFFLINE=1
