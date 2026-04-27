@@ -566,6 +566,7 @@ dependencies = [
     { name = "av" },
     { name = "diffusers" },
     { name = "ftfy" },
+    { name = "huggingface-hub" },
     { name = "imageio", extra = ["ffmpeg"] },
     { name = "jupyter" },
     { name = "loguru" },
@@ -585,7 +586,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "huggingface-hub" },
     { name = "kaggle" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -597,6 +597,7 @@ requires-dist = [
     { name = "av", specifier = ">=16.1.0" },
     { name = "diffusers", specifier = ">=0.37.0" },
     { name = "ftfy", specifier = ">=6.3.1" },
+    { name = "huggingface-hub", specifier = ">=1.6.0" },
     { name = "imageio", extras = ["ffmpeg"], specifier = ">=2.37.3" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "loguru", specifier = ">=0.7.3" },
@@ -616,7 +617,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "huggingface-hub", specifier = ">=1.6.0" },
     { name = "kaggle", specifier = ">=2.0.0" },
     { name = "pre-commit", specifier = ">=4.5.1" },
     { name = "pytest", specifier = ">=9.0.2" },

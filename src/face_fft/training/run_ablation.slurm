@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=face_fft_deepaction_ablation
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a100:1                              
+#SBATCH --gres=gpu:a100:1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=8                
-#SBATCH --mem=64G          
-#SBATCH --time=60:00:00                   
-#SBATCH --output=logs/run_ablation_%j.out            
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --time=60:00:00
+#SBATCH --output=logs/run_ablation_%j.out
 
 # create a logs directory if it doesn't exist to store the output files
 mkdir -p logs
@@ -17,7 +17,6 @@ echo "Training..."
 echo "----------"
 
 # load required HPC modules
-cd /sfs/weka/scratch/rjr6zk/face-fft/
 source .venv/bin/activate
 
 # run training script

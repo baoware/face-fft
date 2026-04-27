@@ -3,14 +3,15 @@ import torch
 import cv2
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
-import torchvision.transforms.functional as F_t
 from tqdm import tqdm
 
 from face_fft.models.pipeline import FaceFFTPipeline
 from face_fft.models.pipeline_mode import PipelineMode
 
+
 class GVB_FakesOnlyDataset(Dataset):
     """Loads ONLY Fake videos. Label is always 1."""
+
     def __init__(self, video_paths, target_frames=8, target_size=(256, 256)):
         self.video_paths = video_paths
         self.target_frames = target_frames
@@ -32,46 +33,52 @@ class GVB_FakesOnlyDataset(Dataset):
                 raise ValueError("OpenCV failed to open.")
 
             # Read sequentially (100x faster for MP4 than cap.set)
-            frames =[]
+            frames = []
             while True:
                 ret, frame = cap.read()
                 if not ret:
                     break
-                
+
                 # Resize immediately to save RAM
                 frame = cv2.resize(frame, (self.target_size[1], self.target_size[0]))
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(frame)
-                
+
             cap.release()
 
             total_read = len(frames)
             if total_read < self.target_frames:
-                raise ValueError(f"Only read {total_read} frames, needed {self.target_frames}.")
+                raise ValueError(
+                    f"Only read {total_read} frames, needed {self.target_frames}."
+                )
 
             # Subsample the sequentially read frames
             indices = np.linspace(0, total_read - 1, self.target_frames).astype(int)
             sampled_frames = [frames[i] for i in indices]
 
             # Convert to tensor (C, T, H, W)
-            v = torch.from_numpy(np.array(sampled_frames)).permute(3, 0, 1, 2).float() / 255.0
-            
+            v = (
+                torch.from_numpy(np.array(sampled_frames)).permute(3, 0, 1, 2).float()
+                / 255.0
+            )
+
             return v, 1, True  # Valid = True
-            
-        except Exception as e:
+
+        except Exception:
             # Return empty tensor and set Valid = False
             return torch.zeros((3, self.target_frames, *self.target_size)), 1, False
 
+
 def main():
-    DATA_ROOT = "/scratch/rjr6zk/face-fft/src/face_fft/data/genvidbench_dataset" 
+    DATA_ROOT = "src/face_fft/data/genvidbench_dataset"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using Device: {DEVICE}")
-    
-    ARCHITECTURES =["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
+
+    ARCHITECTURES = ["compact", "r3d_18", "mc3_18", "r2plus1d_18"]
     GENERATORS = ["Sora", "Kling", "OpenSora"]
     # Options: PIXEL_BASELINE, FFT_NO_MASK, FFT_LEARNABLE_MASK
     PIPELINE_MODE = PipelineMode.FFT_LEARNABLE_MASK
-    
+
     MAX_VIDS_PER_GEN = 200
 
     results = {arch: {} for arch in ARCHITECTURES}
@@ -83,7 +90,7 @@ def main():
             continue
 
         print(f"\nTesting Architecture: {arch.upper()}")
-        
+
         # Initialize Pipeline
         model = FaceFFTPipeline(
             log_scale=True,
@@ -96,69 +103,86 @@ def main():
         )
 
         # Load Weights
-        model.load_state_dict(torch.load(weights_path, weights_only=True, map_location=DEVICE))
+        model.load_state_dict(
+            torch.load(weights_path, weights_only=True, map_location=DEVICE)
+        )
         model.to(DEVICE)
         model.eval()
-        
+
         arch_total_caught = 0
         arch_total_vids = 0
-        
+
         # Evaluate each generator independently
         for gen in GENERATORS:
             gen_dir = os.path.join(DATA_ROOT, gen)
             if not os.path.exists(gen_dir):
                 print(f"Folder not found for {gen}")
                 continue
-                
-            fake_vids =[os.path.join(dp, f) for dp, dn, filenames in os.walk(gen_dir) for f in filenames if f.endswith('.mp4')]
-            
+
+            fake_vids = [
+                os.path.join(dp, f)
+                for dp, dn, filenames in os.walk(gen_dir)
+                for f in filenames
+                if f.endswith(".mp4")
+            ]
+
             if len(fake_vids) == 0:
                 continue
-                
+
             if len(fake_vids) > MAX_VIDS_PER_GEN:
-                np.random.seed(10) # encara Messi
-                fake_vids = np.random.choice(fake_vids, MAX_VIDS_PER_GEN, replace=False).tolist()
-                
+                np.random.seed(10)  # encara Messi
+                fake_vids = np.random.choice(
+                    fake_vids, MAX_VIDS_PER_GEN, replace=False
+                ).tolist()
+
             test_dataset = GVB_FakesOnlyDataset(fake_vids)
-            test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=0)
-            
+            test_loader = DataLoader(
+                test_dataset, batch_size=4, shuffle=False, num_workers=0
+            )
+
             caught_fakes = 0
             total_fakes = 0
-            
+
             with torch.no_grad():
                 # inputs, labels, is_valid
-                for inputs, _, is_valid in tqdm(test_loader, desc=f"   Detecting {gen}", leave=False):
-                    
+                for inputs, _, is_valid in tqdm(
+                    test_loader, desc=f"   Detecting {gen}", leave=False
+                ):
+
                     # Filter out corrupted videos from this batch
                     valid_mask = is_valid.bool()
                     if not valid_mask.any():
-                        continue # Skip if the entire batch is corrupted
+                        continue  # Skip if the entire batch is corrupted
 
                     inputs = inputs[valid_mask].to(DEVICE)
-                    
+
                     logits = model(inputs).squeeze(-1)
-                    
+
                     # Edge case: If batch size drops to 1, squeeze removes the batch dimension.
                     if logits.dim() == 0:
                         logits = logits.unsqueeze(0)
-                        
-                    preds = (logits > 0.0).float() # Prediction > 0 means FAKE
-                    
+
+                    preds = (logits > 0.0).float()  # Prediction > 0 means FAKE
+
                     caught_fakes += preds.sum().item()
                     total_fakes += inputs.size(0)
-            
+
             gen_rate = (caught_fakes / total_fakes) * 100 if total_fakes > 0 else 0
             results[arch][gen] = gen_rate
-            
+
             arch_total_caught += caught_fakes
             arch_total_vids += total_fakes
-            
+
         # Calculate overall recall for this architecture
-        overall_rate = (arch_total_caught / arch_total_vids) * 100 if arch_total_vids > 0 else 0
+        overall_rate = (
+            (arch_total_caught / arch_total_vids) * 100 if arch_total_vids > 0 else 0
+        )
         results[arch]["OVERALL"] = overall_rate
         print(f"   > {arch.upper()} Overall Detection Rate: {overall_rate:.2f}%")
 
-    print(f"| {'Architecture':<12} | {'Sora':<10} | {'Kling':<10} | {'OpenSora':<10} | {'OVERALL':<10} |")
+    print(
+        f"| {'Architecture':<12} | {'Sora':<10} | {'Kling':<10} | {'OpenSora':<10} | {'OVERALL':<10} |"
+    )
     print("|--------------|------------|------------|------------|------------|")
     for arch in ARCHITECTURES:
         if arch in results and results[arch]:
@@ -167,8 +191,11 @@ def main():
             kling_rate = f"{r.get('Kling', 0):.2f}%"
             opensora_rate = f"{r.get('OpenSora', 0):.2f}%"
             overall_rate = f"{r.get('OVERALL', 0):.2f}%"
-            
-            print(f"| {arch.upper():<12} | {sora_rate:>10} | {kling_rate:>10} | {opensora_rate:>10} | {overall_rate:>10} |")
+
+            print(
+                f"| {arch.upper():<12} | {sora_rate:>10} | {kling_rate:>10} | {opensora_rate:>10} | {overall_rate:>10} |"
+            )
+
 
 if __name__ == "__main__":
     main()
