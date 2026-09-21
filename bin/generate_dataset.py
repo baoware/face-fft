@@ -84,6 +84,15 @@ def main():
         ),
     )
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help=(
+            "Base seed for diffusion sampling. Each video uses seed+index, so a rerun "
+            "reproduces the same synthetic videos. Omit for unseeded (non-reproducible) output."
+        ),
+    )
+    parser.add_argument(
         "--local_files_only",
         action="store_true",
         default=False,
@@ -146,6 +155,7 @@ def main():
                 num_inference_steps=args.num_inference_steps,
                 cache_dir=args.cache_dir,
                 local_files_only=args.local_files_only,
+                seed=(args.seed + i) if args.seed is not None else None,
             )
 
             # Handle if synth_frames_pil is already a tensor

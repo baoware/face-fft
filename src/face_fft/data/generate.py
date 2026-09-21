@@ -78,6 +78,7 @@ def generate_synthetic_video_cogvideox(
     num_inference_steps: int = 20,
     cache_dir: str | None = None,
     local_files_only: bool = False,
+    seed: int | None = None,
 ):
     """
     Generates a synthetic video using CogVideoX 5B.
@@ -94,6 +95,10 @@ def generate_synthetic_video_cogvideox(
     )
     pipe = pipe.to("cuda")
 
+    # Seeded sampling: without this, regenerating the same source frame yields a
+    # different video, so any spectral measurement made on it is unreproducible.
+    generator = torch.Generator(device="cuda").manual_seed(seed) if seed is not None else None
+
     output = pipe(
         image=image,
         prompt=prompt,
@@ -102,6 +107,7 @@ def generate_synthetic_video_cogvideox(
         num_inference_steps=num_inference_steps,
         guidance_scale=6.0,
         use_dynamic_cfg=True,
+        generator=generator,
     )
     frames = output.frames[0]
 
@@ -121,6 +127,7 @@ def generate_synthetic_video_wan(
     num_inference_steps: int = 20,
     cache_dir: str | None = None,
     local_files_only: bool = False,
+    seed: int | None = None,
 ):
     """
     Generates a synthetic video using WanImageToVideoPipeline.
@@ -137,12 +144,15 @@ def generate_synthetic_video_wan(
     )
     pipe = pipe.to("cuda")
 
+    generator = torch.Generator(device="cuda").manual_seed(seed) if seed is not None else None
+
     frames = pipe(
         image=image,
         prompt=prompt,
         height=height,
         width=width,
         num_inference_steps=num_inference_steps,
+        generator=generator,
     ).frames[0]
 
     del pipe

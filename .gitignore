@@ -34,6 +34,7 @@ src/face_fft/data/genvidbench_dataset/
 src/face_fft/training/logs
 
 # Checkpoint files
+checkpoints
 checkpoints/
 
 # Slurm output files
@@ -45,3 +46,6 @@ local/
 # Images
 *.png
 
+
+# Job logs
+logs/
