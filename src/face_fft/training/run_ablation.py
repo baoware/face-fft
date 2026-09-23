@@ -36,7 +36,7 @@ def main():
     CKPT_DIR = {
         PipelineMode.PIXEL_BASELINE: "checkpoints",
         PipelineMode.FFT_NO_MASK: "checkpoints/no_filter",
-        PipelineMode.FFT_LEARNABLE_MASK: "checkpoints/learnable_mask",
+        PipelineMode.FFT_LEARNABLE_MASK: "checkpoints/learnable_filter",
     }[PIPELINE_MODE]
     os.makedirs(CKPT_DIR, exist_ok=True)
     print(f"Pipeline mode: {PIPELINE_MODE}  ->  {CKPT_DIR}/")
