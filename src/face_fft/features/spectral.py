@@ -12,15 +12,24 @@ class SpatiotemporalFFT(nn.Module):
     create coherent and detectable periodic frequency signatures.
     """
 
-    def __init__(self, log_scale: bool = True, epsilon: float = 1e-8):
+    def __init__(self, log_scale: bool = True, epsilon: float = 1e-8, temporal_whiten: bool = False):
         """
         Args:
             log_scale: Whether to apply logarithmic scaling to emphasize weaker harmonics.
             epsilon: Small constant to avoid log(0).
+            temporal_whiten: Subtract, at every spatial frequency, a running median of the
+                log-magnitude along the temporal-frequency axis. Frame rate and motion set
+                the smooth fall-off of that profile (a shortcut between sources); a latent
+                temporal stride puts a narrow peak on it. A median of 5 (3 when T < 16)
+                bins passes a single-bin peak almost unchanged and cancels smooth trends.
+                Requires log_scale.
         """
         super().__init__()
+        if temporal_whiten and not log_scale:
+            raise ValueError("temporal_whiten operates on the log-magnitude; set log_scale=True")
         self.log_scale = log_scale
         self.epsilon = epsilon
+        self.temporal_whiten = temporal_whiten
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -54,4 +63,19 @@ class SpatiotemporalFFT(nn.Module):
         if self.log_scale:
             magnitude = torch.log(magnitude + self.epsilon)
 
+        if self.temporal_whiten:
+            magnitude = magnitude - self._temporal_running_median(magnitude)
+
         return magnitude
+
+    @staticmethod
+    def _temporal_running_median(x: torch.Tensor) -> torch.Tensor:
+        """Running median along dim -3 (temporal frequency), circular because the
+        spectrum is periodic in frequency."""
+        T = x.shape[-3]
+        k = 5 if T >= 16 else 3
+        p = k // 2
+        xt = x.movedim(-3, -1)                                   # (..., H, W, T)
+        padded = torch.cat([xt[..., -p:], xt, xt[..., :p]], dim=-1)
+        med = padded.unfold(-1, k, 1).median(dim=-1).values      # (..., H, W, T)
+        return med.movedim(-1, -3)

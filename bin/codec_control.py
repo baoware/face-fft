@@ -224,18 +224,24 @@ def main():
                 "real_h264": h264_roundtrip(real_u8, args.fps, args.crf),
             }
 
-            rec = {"video": vid.stem}
+            # DeepAction names every source a.mp4, so the stem alone collides: the first
+            # full run silently overwrote each video's saved tensors with the next one.
+            uid = f"{i:03d}_{vid.parent.name}_{vid.stem}"
+            rec = {"video": uid, "source_path": str(vid), "spectra": {}}
             for name, u8 in variants.items():
                 # identical preprocessing for every condition: the codec is the only variable
                 t = preprocess_video_tensor(u8, target_size=(args.size, args.size), num_frames=args.num_frames)
                 P = temporal_power_spectrum(t)
                 rec[name] = peak_prominence_db(P, args.period)
+                # keep the full spectrum so other periods can be checked later: a gap
+                # that appears at every period is spectral slope, not a peak
+                rec["spectra"][name] = [float(v) for v in P]
                 torch.save(
                     {"video": t, "temporal_power": P, "condition": name},
-                    out / "tensors" / f"{vid.stem}_{name}.pt",
+                    out / "tensors" / f"{uid}_{name}.pt",
                 )
             rows.append(rec)
-            print(f"  {vid.stem}: " + "  ".join(f"{c}={rec[c]:+.2f}dB" for c in conditions), flush=True)
+            print(f"  {uid}: " + "  ".join(f"{c}={rec[c]:+.2f}dB" for c in conditions), flush=True)
 
         except Exception as e:
             import traceback

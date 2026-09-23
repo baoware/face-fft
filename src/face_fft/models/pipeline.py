@@ -30,7 +30,8 @@ class FaceFFTPipeline(nn.Module):
         self.use_fft = self.mode != PipelineMode.PIXEL_BASELINE
         use_learnable_mask = self.mode == PipelineMode.FFT_LEARNABLE_MASK
 
-        self.fft = SpatiotemporalFFT(log_scale=log_scale) if self.use_fft else None
+        whiten = self.mode == PipelineMode.FFT_WHITENED
+        self.fft = SpatiotemporalFFT(log_scale=log_scale, temporal_whiten=whiten) if self.use_fft else None
 
         clf_kw = dict(
             in_channels=in_channels,

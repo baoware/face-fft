@@ -49,3 +49,6 @@ local/
 
 # Job logs
 logs/
+
+# Format-normalised clip cache (regenerable from manifest + bin/build_cache.py)
+cache/

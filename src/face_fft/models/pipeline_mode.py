@@ -17,6 +17,11 @@ class PipelineMode(StrEnum):
     FFT_LEARNABLE_MASK = "fft_learnable_mask"
     """3D-FFT → learnable per-voxel mask (parameter shape fixed by temporal_frames × spatial_size)."""
 
+    FFT_WHITENED = "fft_whitened"
+    """3D-FFT log-magnitude with a fixed temporal whitening: each spatial frequency's
+    temporal profile minus its running median. Removes the smooth fall-off that frame
+    rate and motion set, keeps narrow periodic peaks. No learned parameters."""
+
 
 def parse_pipeline_mode(value: str | PipelineMode) -> PipelineMode:
     if isinstance(value, PipelineMode):
