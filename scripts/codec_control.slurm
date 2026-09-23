@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:a100:1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --mem=96G
 #SBATCH --time=12:00:00
 #SBATCH --output=/sfs/weka/scratch/rjr6zk/face-fft/logs/codec_control_%j.out
 
@@ -20,11 +20,13 @@ SOURCE_DIR="${REPO}/src/face_fft/data/deepaction_dataset/Pexels"
 OUT_DIR=/standard/uva-mira-drive/3d-fft_results/codec_control
 HF_CACHE=/sfs/weka/scratch/rjr6zk/hf-cache
 MODEL=zai-org/CogVideoX-5b-I2V
+NUM_VIDEOS="${NUM_VIDEOS:-50}"
 UV=/home/rjr6zk/.local/bin/uv
 PYBIN=/sfs/weka/scratch/rjr6zk/uv-python/cpython-3.12.13-linux-x86_64-gnu/bin/python3.12
 
 export UV_LINK_MODE=copy
 export HF_HOME="${HF_CACHE}"
+export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 cd "${REPO}"
 mkdir -p "${OUT_DIR}"
@@ -63,7 +65,7 @@ echo "[3/3] running codec control ($(date))"
 PYTHONPATH=src python bin/codec_control.py \
     --source_dir "${SOURCE_DIR}" \
     --out_dir "${OUT_DIR}" \
-    --num_videos 50 \
+    --num_videos "${NUM_VIDEOS}" \
     --num_frames 48 \
     --period 4 \
     --crf 23 \
