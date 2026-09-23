@@ -12,7 +12,8 @@ class SpatiotemporalFFT(nn.Module):
     create coherent and detectable periodic frequency signatures.
     """
 
-    def __init__(self, log_scale: bool = True, epsilon: float = 1e-8, temporal_whiten: bool = False):
+    def __init__(self, log_scale: bool = True, epsilon: float = 1e-8, temporal_whiten: bool = False,
+                 dims: tuple[int, ...] = (-3, -2, -1)):
         """
         Args:
             log_scale: Whether to apply logarithmic scaling to emphasize weaker harmonics.
@@ -23,6 +24,9 @@ class SpatiotemporalFFT(nn.Module):
                 temporal stride puts a narrow peak on it. A median of 5 (3 when T < 16)
                 bins passes a single-bin peak almost unchanged and cancels smooth trends.
                 Requires log_scale.
+            dims: axes to transform. (-3, -2, -1) = 3D over (T, H, W); (-3,) = 1D
+                temporal per pixel; (-2, -1) = 2D spatial per frame. Output shape is
+                unchanged in every case, so the same classifier consumes all three.
         """
         super().__init__()
         if temporal_whiten and not log_scale:
@@ -30,6 +34,9 @@ class SpatiotemporalFFT(nn.Module):
         self.log_scale = log_scale
         self.epsilon = epsilon
         self.temporal_whiten = temporal_whiten
+        self.dims = tuple(dims)
+        if temporal_whiten and -3 not in self.dims:
+            raise ValueError("temporal_whiten needs the temporal axis (-3) in dims")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -45,8 +52,8 @@ class SpatiotemporalFFT(nn.Module):
         if x.dim() not in (4, 5):
             raise ValueError(f"Expected input to be 4D or 5D, got {x.dim()}D")
 
-        # The variables corresponding to T, H, W are the last 3 dimensions
-        dims = (-3, -2, -1)
+        # T, H, W are the last 3 dimensions; transform the subset in self.dims
+        dims = self.dims
 
         # Apply 3D FFT over the spatiotemporal cube
         # We use standard fftn instead of rfftn to ensure full symmetric extraction

@@ -38,6 +38,8 @@ def main():
         PipelineMode.FFT_NO_MASK: "checkpoints/no_filter",
         PipelineMode.FFT_LEARNABLE_MASK: "checkpoints/learnable_filter",
         PipelineMode.FFT_WHITENED: "checkpoints/whitened",
+        PipelineMode.FFT_1D_TEMPORAL: "checkpoints/fft_1d_temporal",
+        PipelineMode.FFT_2D_SPATIAL: "checkpoints/fft_2d_spatial",
     }[PIPELINE_MODE]
     os.makedirs(CKPT_DIR, exist_ok=True)
     print(f"Pipeline mode: {PIPELINE_MODE}  ->  {CKPT_DIR}/")

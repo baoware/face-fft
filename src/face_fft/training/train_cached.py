@@ -53,7 +53,7 @@ def main():
     ap.add_argument("--train_pairs", required=True, help="comma list, e.g. Pair1 or Pair1,Pair2")
     ap.add_argument("--val_pairs", default=None, help="defaults to --train_pairs")
     ap.add_argument("--exclude_sources", default="", help="comma list, dropped from train AND val (LOGO)")
-    ap.add_argument("--mode", default="fft_whitened")
+    ap.add_argument("--mode", default="fft_no_mask")
     ap.add_argument("--arch", default="compact")
     ap.add_argument("--T", type=int, default=16)
     ap.add_argument("--real_strides", default="1,2,3,4", help="'1' disables frame-dropping augmentation")

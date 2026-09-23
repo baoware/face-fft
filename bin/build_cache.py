@@ -150,9 +150,9 @@ def main():
             if (i + 1) % 250 == 0:
                 print(f"  {stem}: {i + 1}/{len(chosen)}  {time.time() - t0:.0f}s", flush=True)
         arr.flush(); del arr
-        if row < len(chosen) * len(strides):                 # trim unused preallocated rows
-            full = np.load(out / f"{stem}.npy", mmap_mode="r")[:row].copy()
-            np.save(out / f"{stem}.npy", full)
+        # Rows past `row` (clips too short for a stride, or unreadable) stay as unused
+        # zeros. The .csv lists only valid rows, so readers never touch them. Do NOT
+        # trim by copying: a real-video train shard is ~25 GB and the copy OOM-stalled.
         with open(out / f"{stem}.csv", "w", newline="") as f:
             if index:
                 w = csv.DictWriter(f, fieldnames=list(index[0].keys())); w.writeheader(); w.writerows(index)

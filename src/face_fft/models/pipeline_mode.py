@@ -17,6 +17,14 @@ class PipelineMode(StrEnum):
     FFT_LEARNABLE_MASK = "fft_learnable_mask"
     """3D-FFT → learnable per-voxel mask (parameter shape fixed by temporal_frames × spatial_size)."""
 
+    FFT_1D_TEMPORAL = "fft_1d_temporal"
+    """1D FFT over time only, per pixel -> same (C, T, H, W) shape. Ablation: is the
+    temporal axis alone enough?"""
+
+    FFT_2D_SPATIAL = "fft_2d_spatial"
+    """2D FFT over (H, W) per frame -> same shape. Ablation: per-frame spatial spectrum
+    with no temporal transform (the image-detector baseline)."""
+
     FFT_WHITENED = "fft_whitened"
     """3D-FFT log-magnitude with a fixed temporal whitening: each spatial frequency's
     temporal profile minus its running median. Removes the smooth fall-off that frame
