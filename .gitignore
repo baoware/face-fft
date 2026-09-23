@@ -28,6 +28,8 @@ src/face_fft/data/synth_cogvideox/
 src/face_fft/data/synth_wan/
 src/face_fft/data/deepaction_dataset/
 src/face_fft/data/genvidbench_dataset/
+src/face_fft/data/genvideo100k/
+src/face_fft/data/dvf/
 
 
 # Training logs
@@ -52,3 +54,6 @@ logs/
 
 # Format-normalised clip cache (regenerable from manifest + bin/build_cache.py)
 cache/
+
+# Lossless-test generated frames (regenerable with bin/lossless_test.py generate)
+lossless_frames/
