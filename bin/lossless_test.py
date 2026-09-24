@@ -208,15 +208,11 @@ def analyze_clip(job):
         raw = raw[:T + 1]
         if len(raw) < T + 1:
             return [], f"{model}/{clip_id}: only {len(raw)} frames"
-        conds = [("raw", None, raw, "")]
-        for name, opts in CODECS.items():
-            for crf in crfs:
-                dec, types = encode(raw, opts, crf)
-                if types != EXPECTED[name](len(raw)):
-                    return [], f"{model}/{clip_id}: {name} crf{crf} produced {types}, expected {EXPECTED[name](len(raw))}"
-                conds.append((name, crf, dec, types))
-        rows = []
-        for cname, crf, frames, types in conds:
+        # One condition at a time, reduced to its two 256x256 views immediately. Holding
+        # all 8 decoded copies of a 4K clip (~650 MB each) per worker pinned the job at
+        # its 96 GB limit and thrashed -- the cause of the earlier 12 h "hang".
+        def measure(cname, crf, frames, types):
+            out = []
             for vname, v in views(frames).items():
                 rec = dict(model=model, clip=clip_id, codec=cname, crf=crf if crf is not None else "",
                            view=vname, T=T, frame_types=types)
@@ -224,7 +220,17 @@ def analyze_clip(job):
                     P = fn(v, T)
                     for p in (3, 4):
                         rec[f"{sname}_p{p}"] = peak_prominence_db(P, p)
-                rows.append(rec)
+                out.append(rec)
+            return out
+
+        rows = measure("raw", None, raw, "")
+        for name, opts in CODECS.items():
+            for crf in crfs:
+                dec, types = encode(raw, opts, crf)
+                if types != EXPECTED[name](len(raw)):
+                    return [], f"{model}/{clip_id}: {name} crf{crf} produced {types}, expected {EXPECTED[name](len(raw))}"
+                rows.extend(measure(name, crf, dec, types))
+                del dec
         return rows, None
     except Exception as e:
         return [], f"{model}/{clip_id}: {type(e).__name__}: {e}"

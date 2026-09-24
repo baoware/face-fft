@@ -4,7 +4,7 @@
 #SBATCH --partition=standard
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=96G
+#SBATCH --mem=128G
 #SBATCH --time=12:00:00
 #SBATCH --output=/sfs/weka/scratch/rjr6zk/face-fft/logs/lossless_analyze_%j.out
 
@@ -15,5 +15,5 @@ REPO=/sfs/weka/scratch/rjr6zk/face-fft
 cd "${REPO}"
 source .venv/bin/activate
 for T in 24 48; do
-    PYTHONPATH=src python bin/lossless_test.py analyze --T "${T}" --workers 16 --clip_timeout 1800
+    PYTHONPATH=src python bin/lossless_test.py analyze --T "${T}" --workers 6 --clip_timeout 1800
 done
