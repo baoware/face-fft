@@ -54,7 +54,7 @@ def safe_auc(y, p):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", required=True)
-    ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m")
+    ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m,GenVideo")
     ap.add_argument("--run_dir", help="output dir of train_cached.py (reads config.json + best.pt)")
     ap.add_argument("--ckpt", help="or: a bare state_dict (e.g. the old DeepAction checkpoints)")
     ap.add_argument("--mode"); ap.add_argument("--arch"); ap.add_argument("--T", type=int)

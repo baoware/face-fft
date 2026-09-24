@@ -31,7 +31,7 @@ def main():
         cfg, ev = json.loads(cfg_p.read_text()), json.loads(ev_p.read_text())
         groups[tuple(cfg.get(k) for k in KEY)].append((cfg["seed"], run.name, ev))
 
-    tests = ["Pair1", "Pair2", "DeepAction", "6.7m"]
+    tests = ["Pair1", "Pair2", "DeepAction", "6.7m", "GenVideo"]
     fmt = lambda a: f"{np.mean(a):.3f} ± {np.std(a, ddof=1):.3f}" if len(a) > 1 else (f"{a[0]:.3f}" if a else "–")
     lines = ["# Cached-training runs", "",
              "AUC, native-rate real clips vs all fakes of the test set; mean ± std over seeds.", "",

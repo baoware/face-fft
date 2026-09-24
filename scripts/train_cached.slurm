@@ -20,7 +20,7 @@ source .venv/bin/activate
 : "${RUN_NAME:?set RUN_NAME}"
 TRAIN_PAIRS="${TRAIN_PAIRS:-Pair1}"; MODE="${MODE:-fft_no_mask}"; ARCH="${ARCH:-compact}"
 T="${T:-16}"; SEED="${SEED:-42}"; REAL_STRIDES="${REAL_STRIDES:-1,2,3,4}"; EXCLUDE="${EXCLUDE:-}"
-EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m}"
+EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m,GenVideo}"
 OUT_ROOT=/standard/uva-mira-drive/3d-fft_checkpoints/cached
 
 echo "Job started on $(hostname) at $(date)"

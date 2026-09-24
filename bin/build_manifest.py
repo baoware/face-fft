@@ -68,10 +68,47 @@ def deepaction_rows(da_root: Path):
                        label=label, group=f"da:{pexels_id}", fixed_split="")
 
 
+def genvideo_rows(gv_root: Path, seed: int):
+    """GenVideo (DeMamba). Train side = GenVideo-100K (Real/ + train_<gen>/), split 90/10
+    into train/val; test = the official GenVideo-Val (unseen generators + MSR-VTT reals).
+
+    GIFs are EXCLUDED: all of I2VGEN_XL (train) and 282 of WildScrape's 924 test videos.
+    A GIF's 256-colour palette and dithering survive any re-encode, i.e. a format
+    shortcut, not a generation trace. __MACOSX resource forks (named *.mp4) are skipped.
+    Fakes are grouped by their file index across generators in case equal indices share
+    a prompt (not documented either way); reals by their own index."""
+    def ok(p: Path) -> bool:
+        return (p.suffix.lower() in (".mp4", ".mov") and "__MACOSX" not in p.parts
+                and not p.name.startswith("._"))
+
+    for d in sorted(gv_root.iterdir()):
+        if not d.is_dir() or not (d.name == "Real" or d.name.startswith("train_")):
+            continue
+        label = 0 if d.name == "Real" else 1
+        source = "Real_train" if label == 0 else d.name[len("train_"):]
+        for p in sorted(filter(ok, d.iterdir())):
+            idx = p.stem.rsplit("_", 1)[-1]
+            group = f"gv_real:{idx}" if label == 0 else f"gv_fake:{idx}"
+            h = int(hashlib.sha1(f"{seed}:{group}".encode()).hexdigest(), 16) % 100
+            yield dict(path=str(p), dataset="genvideo", pair="GenVideo", source=source, label=label,
+                       group=group, fixed_split="train" if h < 90 else "val")
+
+    val = gv_root / "GenVideo-Val" / "GenVideo-Val"
+    for p in sorted(filter(ok, (val / "Real").iterdir())):
+        yield dict(path=str(p), dataset="genvideo", pair="GenVideo", source="Real_msrvtt", label=0,
+                   group=f"gv_val_real:{p.stem}", fixed_split="test")
+    for d in sorted((val / "Fake").iterdir()):
+        if d.is_dir():
+            for p in sorted(filter(ok, d.rglob("*"))):
+                yield dict(path=str(p), dataset="genvideo", pair="GenVideo", source=d.name, label=1,
+                           group=f"gv_val:{d.name}:{p.stem}", fixed_split="test")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gvb_root", required=True)
     ap.add_argument("--da_root", required=True)
+    ap.add_argument("--gv_root", default=None, help="GenVideo extracted/ dir (optional)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--train_pct", type=int, default=70)
@@ -80,6 +117,8 @@ def main():
 
     gvb = Path(args.gvb_root)
     rows = list(gvb_rows(gvb, gvb / "raw" / "GenVidBench")) + list(deepaction_rows(Path(args.da_root)))
+    if args.gv_root:
+        rows += list(genvideo_rows(Path(args.gv_root), args.seed))
 
     missing = [r for r in rows if not Path(r["path"]).exists()]
     if missing:

@@ -15,5 +15,5 @@ REPO=/sfs/weka/scratch/rjr6zk/face-fft
 cd "${REPO}"
 source .venv/bin/activate
 for T in 24 48; do
-    PYTHONPATH=src python bin/lossless_test.py analyze --T "${T}" --workers 16
+    PYTHONPATH=src python bin/lossless_test.py analyze --T "${T}" --workers 16 --clip_timeout 1800
 done

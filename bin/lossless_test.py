@@ -151,7 +151,9 @@ def encode(frames: np.ndarray, x264_params: str, crf: int) -> tuple[np.ndarray, 
     with av.open(buf, "w", format="mp4") as c:
         st = c.add_stream("libx264", rate=8)
         st.width, st.height, st.pix_fmt = w, h, "yuv420p"
-        st.options = {"preset": "medium", "crf": str(crf), "x264-params": x264_params}
+        # threads fixed so 16 parallel workers do not oversubscribe the node; the
+        # value is identical for every clip, so encodes stay comparable
+        st.options = {"preset": "medium", "crf": str(crf), "x264-params": x264_params, "threads": "2"}
         for f in padded:
             for p in st.encode(av.VideoFrame.from_ndarray(np.ascontiguousarray(f[:h, :w]), format="rgb24")):
                 c.mux(p)
@@ -228,32 +230,60 @@ def analyze_clip(job):
         return [], f"{model}/{clip_id}: {type(e).__name__}: {e}"
 
 
+def _worker_init():
+    cv2.setNumThreads(1)
+
+
 def analyze(args):
-    gen_root = Path(args.out)
+    """Resumable: each clip's rows are written to clips_T<T>/<model>__<clip>.json the
+    moment it finishes, and clips already on disk are skipped. The first full run hung
+    for 12 h on the 4K real clips after 175/200 and, since results were only written at
+    the end, produced nothing. Workers are spawned (not forked after OpenCV/FFmpeg have
+    started threads) and every clip has a timeout."""
+    import multiprocessing as mp
+    gen_root, res_root = Path(args.out), Path(args.results)
+    clip_dir = res_root / f"clips_T{args.T}"
+    clip_dir.mkdir(parents=True, exist_ok=True)
     crfs = [int(c) for c in args.crfs.split(",")]
+
     jobs = []
     for model in ("cogvideox", "wan", "svd"):
         for f in sorted((gen_root / model).glob("*.npy")):
             jobs.append((model, f.stem, str(f), args.T, crfs))
     for pid, vid, _ in pexels_items(Path(args.da_root), args.n):
         jobs.append(("real_pexels", pid, str(vid), args.T, crfs))
-    print(f"analyzing {len(jobs)} clips at T={args.T}, CRFs {crfs}", flush=True)
+    todo = [j for j in jobs if not (clip_dir / f"{j[0]}__{j[1]}.json").exists()]
+    print(f"T={args.T}: {len(jobs)} clips, {len(jobs) - len(todo)} already done, {len(todo)} to run, CRFs {crfs}", flush=True)
 
-    rows, t0 = [], time.time()
-    with Pool(args.workers) as pool:
-        for i, (r, err) in enumerate(pool.imap_unordered(analyze_clip, jobs), 1):
-            rows.extend(r)
+    t0 = time.time()
+    ctx = mp.get_context("spawn")
+    with ctx.Pool(args.workers, initializer=_worker_init) as pool:
+        pending = [(j, pool.apply_async(analyze_clip, (j,))) for j in todo]
+        for i, (j, res) in enumerate(pending, 1):
+            try:
+                rows, err = res.get(timeout=args.clip_timeout)
+            except mp.TimeoutError:
+                rows, err = [], f"{j[0]}/{j[1]}: timed out after {args.clip_timeout}s"
             if err:
                 print("  skip", err, flush=True)
-            if i % 25 == 0:
-                print(f"  {i}/{len(jobs)} clips  {time.time() - t0:.0f}s", flush=True)
+            else:
+                (clip_dir / f"{j[0]}__{j[1]}.json").write_text(json.dumps(rows))
+            if i % 25 == 0 or i == len(pending):
+                print(f"  {i}/{len(pending)} clips  {time.time() - t0:.0f}s", flush=True)
+        pool.terminate()
+    summarize(res_root, args.T, crfs)
 
-    out_csv = Path(args.results) / f"lossless_test_T{args.T}.csv"
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
+
+def summarize(res_root: Path, T: int, crfs: list[int]):
+    rows = []
+    for f in sorted((res_root / f"clips_T{T}").glob("*.json")):
+        rows.extend(json.loads(f.read_text()))
+    if not rows:
+        print("no results yet"); return
+    out_csv = res_root / f"lossless_test_T{T}.csv"
     with open(out_csv, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 
-    # frame-type patterns actually produced (verify the codec did what we asked)
     print("\nframe types actually encoded (first clip per setting):")
     seen = set()
     for r in rows:
@@ -261,7 +291,7 @@ def analyze(args):
         if r["codec"] != "raw" and k not in seen:
             seen.add(k); print(f"  {r['codec']:6s} crf {r['crf']}: {r['frame_types']}")
 
-    lines = [f"Lossless test, T={args.T}. Mean prominence in dB (+-SEM over clips). "
+    lines = [f"Lossless test, T={T}. Mean prominence in dB (+-SEM over clips). "
              f"Period 4 = generator/IBBBP period; period 3 = IBBP period.", ""]
     for view in ("crop", "resize"):
         for stat in ("spectral", "framediff"):
@@ -274,13 +304,16 @@ def analyze(args):
                                and str(r["crf"]) == str(crf) and r["view"] == view]
                         if not sel:
                             continue
-                        cell = lambda k: (lambda a: f"{a.mean():+7.2f} +-{a.std(ddof=1) / np.sqrt(len(a)) if len(a) > 1 else 0:4.2f}")(
-                            np.array([s[k] for s in sel if s[k] == s[k]]))
-                        lines.append(f"{model:<13}{codec:<7}{str(crf):>4}{len(sel):>5}{cell(f'{stat}_p4'):>16}{cell(f'{stat}_p3'):>16}")
+                        def cell(k):
+                            a = np.array([x[k] for x in sel if x[k] == x[k]])
+                            sem = a.std(ddof=1) / np.sqrt(len(a)) if len(a) > 1 else 0.0
+                            return f"{a.mean():+7.2f} +-{sem:4.2f}"
+                        lines.append(f"{model:<13}{codec:<7}{str(crf):>4}{len(sel):>5}"
+                                     f"{cell(stat + '_p4'):>16}{cell(stat + '_p3'):>16}")
             lines.append("")
     text = "\n".join(lines)
     print("\n" + text)
-    (Path(args.results) / f"lossless_test_T{args.T}_summary.txt").write_text(text + "\n")
+    (res_root / f"lossless_test_T{T}_summary.txt").write_text(text + "\n")
     print(f"wrote {out_csv}")
 
 
@@ -297,6 +330,7 @@ def main():
     ap.add_argument("--T", type=int, default=24, help="frames analysed; SVD-xt yields 25 = T+1")
     ap.add_argument("--crfs", default="23,35")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--clip_timeout", type=int, default=1800, help="seconds per clip before it is skipped")
     args = ap.parse_args()
     generate(args) if args.stage == "generate" else analyze(args)
 
