@@ -23,7 +23,6 @@
 #
 # After ingestion, submit train.slurm to train on the resulting .pt files.
 
-#SBATCH --account=uva-mira
 #SBATCH -A uva-mira
 #SBATCH -p standard
 #SBATCH -c 8

@@ -20,7 +20,6 @@
 # NOTE: train.slurm already includes evaluation. Use this script only if you need
 # to re-evaluate an existing model checkpoint without retraining.
 
-#SBATCH --account=uva-mira
 #SBATCH -A uva-mira
 #SBATCH -p gpu
 #SBATCH --gres=gpu:1

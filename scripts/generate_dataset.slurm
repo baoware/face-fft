@@ -13,7 +13,6 @@
 # USAGE
 #   sbatch scripts/generate_dataset.slurm
 
-#SBATCH --account=uva-mira
 #SBATCH -A uva-mira
 #SBATCH -p gpu
 #SBATCH --gres=gpu:a100:1
