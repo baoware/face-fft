@@ -14,6 +14,7 @@
 # (CogVideoX→CogVideoX) and cross-generator (CogVideoX→Wan) splits.
 # Use eval.slurm to re-run evaluation only if needed.
 
+#SBATCH --account=uva-mira
 #SBATCH -A uva-mira
 #SBATCH -p gpu
 #SBATCH --gres=gpu:1

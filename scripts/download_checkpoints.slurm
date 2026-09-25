@@ -15,6 +15,7 @@
 #   /scratch on Rivanna purges files after 90 days of inactivity.
 #   Re-run this script if your checkpoints have been purged.
 
+#SBATCH --account=uva-mira
 #SBATCH -A uva-mira
 #SBATCH -p standard
 #SBATCH -c 4

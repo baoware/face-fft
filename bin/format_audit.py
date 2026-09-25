@@ -56,17 +56,25 @@ def probe(path: Path) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", required=True, help="extracted/ directory")
-    ap.add_argument("--labels", required=True, nargs="+", help="Pair{1,2}_labels.txt")
+    ap.add_argument("--root", help="extracted/ directory (with --labels)")
+    ap.add_argument("--labels", nargs="+", help="Pair{1,2}_labels.txt")
+    ap.add_argument("--manifest", help="alternative input: a build_manifest.py CSV")
+    ap.add_argument("--pairs", default=None, help="with --manifest: comma list of pairs to audit")
     ap.add_argument("--per_source", type=int, default=400)
     ap.add_argument("--out_csv", required=True)
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
     random.seed(args.seed)
 
-    root = Path(args.root)
     by_source = defaultdict(list)  # (pair, source) -> [(path, label)]
-    for lf in args.labels:
+    if args.manifest:
+        want = set(args.pairs.split(",")) if args.pairs else None
+        for r in csv.DictReader(open(args.manifest)):
+            if want is None or r["pair"] in want:
+                # key by split as well, so train-side and test-side sources stay separate
+                by_source[(f"{r['pair']}:{r['split']}", r["source"])].append((Path(r["path"]), int(r["label"])))
+    root = Path(args.root) if args.root else None
+    for lf in (args.labels or []):
         for line in open(lf):
             line = line.rstrip("\n")
             if not line:

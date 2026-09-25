@@ -3,6 +3,7 @@
 #SBATCH --account=uva-mira
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1
+#SBATCH --exclude=udc-an36-13
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

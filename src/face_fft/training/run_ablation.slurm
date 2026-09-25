@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --account=uva-mira
 #SBATCH --job-name=face_fft_deepaction_ablation
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1                              
