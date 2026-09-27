@@ -32,9 +32,11 @@ from build_cache import lowlevel_stats, reencode
 FEATS = ["mean", "contrast", "sharpness", "motion", "bytes_per_frame"]
 
 
-def load(cache: Path, T: int, crf: int):
+def load(cache: Path, T: int, crf: int, pairs=None):
     rows = []
     for idx_path in sorted(cache.glob("*.csv")):
+        if pairs and idx_path.stem.split("__")[0] not in pairs:
+            continue
         arr = np.load(idx_path.with_suffix(".npy"), mmap_mode="r")
         for r in csv.DictReader(open(idx_path)):
             if int(r["n_valid"]) < T:
@@ -58,9 +60,11 @@ def main():
     ap.add_argument("--T", type=int, default=8)
     ap.add_argument("--crf", type=int, default=23)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--pairs", default=None, help="comma list: only load these datasets")
     args = ap.parse_args()
 
-    rows = load(Path(args.cache), args.T, args.crf)
+    pairs = set(args.pairs.split(",")) if args.pairs else None
+    rows = load(Path(args.cache), args.T, args.crf, pairs)
     sel = lambda pair, split: [r for r in rows if r["pair"] == pair and r["split"] == split]
 
     protocols = {
@@ -68,6 +72,9 @@ def main():
         "E3  Pair1 -> Pair2 test": ("Pair1", "Pair2"),
         "E3r Pair2 -> Pair1 test": ("Pair2", "Pair1"),
         "E4  Pair1 -> DeepAction test": ("Pair1", "DeepAction"),
+        "E4g Pair1 -> GenVideo-Val": ("Pair1", "GenVideo"),
+        "GV  GenVideo -> GenVideo-Val": ("GenVideo", "GenVideo"),
+        "GVx GenVideo -> Pair2 test": ("GenVideo", "Pair2"),
     }
     lines = [f"Shortcut baseline on normalised cache, T={args.T}. AUC (0.5 = chance).",
              f"features: {', '.join(FEATS)}", ""]

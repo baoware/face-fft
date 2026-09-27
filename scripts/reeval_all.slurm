@@ -20,6 +20,6 @@ for run in /standard/uva-mira-drive/3d-fft_checkpoints/cached/*/; do
     [ -f "${run}config.json" ] && [ -f "${run}best.pt" ] || continue
     echo "=== ${run} ($(date +%T))"
     PYTHONPATH=src python -m face_fft.eval.eval_cached --cache "${REPO}/cache/v1" --run_dir "${run}" \
-        --tests Pair1,Pair2,DeepAction,6.7m,GenVideo | grep -E "^\[GenVideo\]|^wrote"
+        --tests Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF | grep -E "^\[(GenVideo|DVF)\]|^wrote"
 done
 python bin/summarize_runs.py > /dev/null && echo "summary -> /standard/uva-mira-drive/3d-fft_results/runs_summary.md"

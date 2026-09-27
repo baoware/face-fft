@@ -104,11 +104,26 @@ def genvideo_rows(gv_root: Path, seed: int):
                            group=f"gv_val:{d.name}:{p.stem}", fixed_split="test")
 
 
+def dvf_rows(dvf_root: Path):
+    """DVF (MM-Det): <gen>/0_real/*.mp4 and <gen>/1_fake/*.mp4. Cross-dataset TEST only.
+    Real sets exist for opensora, videocrafter1, youtube and zeroscope; other generators
+    have fakes only, so evaluation pools all DVF reals (flagged as a real-source mismatch)."""
+    for gen_dir in sorted(d for d in dvf_root.iterdir() if d.is_dir()):
+        for sub, label in (("0_real", 0), ("1_fake", 1)):
+            for p in sorted((gen_dir / sub).glob("*.mp4")) if (gen_dir / sub).is_dir() else []:
+                if p.name.startswith("._"):
+                    continue
+                source = f"real_{gen_dir.name}" if label == 0 else gen_dir.name
+                yield dict(path=str(p), dataset="dvf", pair="DVF", source=source, label=label,
+                           group=f"dvf:{source}:{p.stem}", fixed_split="test")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gvb_root", required=True)
     ap.add_argument("--da_root", required=True)
     ap.add_argument("--gv_root", default=None, help="GenVideo extracted/ dir (optional)")
+    ap.add_argument("--dvf_root", default=None, help="DVF extracted/ dir (optional)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--train_pct", type=int, default=70)
@@ -119,6 +134,8 @@ def main():
     rows = list(gvb_rows(gvb, gvb / "raw" / "GenVidBench")) + list(deepaction_rows(Path(args.da_root)))
     if args.gv_root:
         rows += list(genvideo_rows(Path(args.gv_root), args.seed))
+    if args.dvf_root:
+        rows += list(dvf_rows(Path(args.dvf_root)))
 
     missing = [r for r in rows if not Path(r["path"]).exists()]
     if missing:

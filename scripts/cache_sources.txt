@@ -39,3 +39,15 @@ GenVideo VideoCrafter train=2000,val=300,test=2000
 GenVideo WildScrape train=2000,val=300,test=2000
 GenVideo ZeroScope train=2000,val=300,test=2000
 GenVideo pika train=2000,val=300,test=2000
+DVF opensora test=1000
+DVF pika test=1000
+DVF sora test=1000
+DVF stablediffusion test=1000
+DVF stablevideo test=1000
+DVF stablevideodiffusion test=1000
+DVF videocrafter1 test=1000
+DVF zeroscope test=1000
+DVF real_opensora test=1000
+DVF real_videocrafter1 test=1000
+DVF real_youtube test=1000
+DVF real_zeroscope test=1000
