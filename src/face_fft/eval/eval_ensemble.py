@@ -6,6 +6,13 @@ benchmark's reals. Scores are combined per clip:
         generator should fire; the rest stay low)
   mean  average probability
 
+  stack_lr   logistic regression on the experts' logit scores
+  stack_mlp  small MLP (one hidden layer) on the experts' concatenated penultimate
+             features (the input to each model's final linear layer)
+Both stacking layers are fit ONLY on the validation splits of the experts' own
+benchmarks (--fit_pairs, default Pair1+Pair2): clips the experts never trained on,
+and never any test clip. The unseen test sets therefore stay untouched.
+
 Reported like eval_cached.py: AUC on native-rate reals vs all fakes, per-generator
 AUC, and per-real-source mean score. Each expert's own AUC is listed too, so the
 ensemble can be compared with its best member. Generators an expert was trained on
@@ -21,7 +28,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.nn as nn
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
+from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
 
 from face_fft.data.cached import CachedClipDataset
@@ -32,12 +44,44 @@ def safe_auc(y, p):
     return float(roc_auc_score(y, p)) if len(set(y)) == 2 else float("nan")
 
 
+def last_linear(model: nn.Module) -> nn.Linear:
+    return [m for m in model.modules() if isinstance(m, nn.Linear)][-1]
+
+
+@torch.no_grad()
+def score(experts, ds, device, batch_size, num_workers):
+    """Per-expert probabilities (E, N) and concatenated penultimate features (N, D)."""
+    feats = {i: [] for i in range(len(experts))}
+    hooks = [last_linear(m).register_forward_pre_hook(lambda mod, inp, i=i: feats[i].append(inp[0].float().cpu()))
+             for i, (_, m, _) in enumerate(experts)]
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    P = np.zeros((len(experts), len(ds)), dtype=np.float32)
+    try:
+        i = 0
+        for x, _ in loader:
+            x = x.to(device)
+            for e, (_, m, _) in enumerate(experts):
+                P[e, i:i + len(x)] = torch.sigmoid(m(x).squeeze(1)).float().cpu().numpy()
+            i += len(x)
+    finally:
+        for h in hooks:
+            h.remove()
+    F = torch.cat([torch.cat(feats[i]) for i in range(len(experts))], dim=1).numpy()
+    return P, F
+
+
+def logit(P):
+    p = np.clip(P, 1e-6, 1 - 1e-6)
+    return np.log(p / (1 - p)).T          # (N, E)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", required=True)
     ap.add_argument("--runs", nargs="+", required=True, help="train_cached.py run directories")
     ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--fit_pairs", default="Pair1,Pair2", help="val splits the stacking layers are fit on")
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--num_workers", type=int, default=8)
     args = ap.parse_args()
@@ -55,7 +99,18 @@ def main():
     T = Ts.pop()
     print(f"{len(experts)} experts, T={T}: {[n for n, _, _ in experts]}", flush=True)
 
-    results = {"experts": [n for n, _, _ in experts], "T": T, "tests": {}}
+    # stacking layers, fit on validation clips only
+    val = CachedClipDataset(args.cache, [p for p in args.fit_pairs.split(",") if p], "val", T)
+    Pv, Fv = score(experts, val, device, args.batch_size, args.num_workers)
+    yv = np.array([r["label"] for r in val.rows])
+    stack_lr = make_pipeline(StandardScaler(), LogisticRegression(max_iter=5000, class_weight="balanced")).fit(logit(Pv), yv)
+    stack_mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(64,), alpha=1e-3, early_stopping=True,
+                                                              max_iter=500, random_state=0)).fit(Fv, yv)
+    lr_w = dict(zip([n for n, _, _ in experts], stack_lr[-1].coef_[0].round(3).tolist()))
+    print(f"stacking fit on {len(val)} val clips ({int((yv == 0).sum())} real); LR weights per expert: {lr_w}", flush=True)
+
+    results = {"experts": [n for n, _, _ in experts], "T": T, "fit_pairs": args.fit_pairs,
+               "stack_lr_weights": lr_w, "tests": {}}
     for name in [t for t in args.tests.split(",") if t]:
         if name == "6.7m":
             ds = CachedClipDataset(args.cache, ["6.7m", "Pair1", "Pair2", "DeepAction"], "test", T)
@@ -64,22 +119,16 @@ def main():
             ds = CachedClipDataset(args.cache, [name], "test", T)
         if not ds.rows:
             continue
-        loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-        P = np.zeros((len(experts), len(ds)), dtype=np.float32)
-        with torch.no_grad():
-            i = 0
-            for x, _ in loader:
-                x = x.to(device)
-                for e, (_, m, _) in enumerate(experts):
-                    P[e, i:i + len(x)] = torch.sigmoid(m(x).squeeze(1)).float().cpu().numpy()
-                i += len(x)
+        P, F = score(experts, ds, device, args.batch_size, args.num_workers)
 
         y = np.array([r["label"] for r in ds.rows])
         stride = np.array([r["stride"] for r in ds.rows])
         src = np.array([r["source"] for r in ds.rows])
         head = (y == 1) | (stride == 1)
         real1 = (y == 0) & (stride == 1)
-        combos = {"max": P.max(0), "mean": P.mean(0)}
+        combos = {"max": P.max(0), "mean": P.mean(0),
+                  "stack_lr": stack_lr.predict_proba(logit(P))[:, 1],
+                  "stack_mlp": stack_mlp.predict_proba(F)[:, 1]}
         res = {"per_expert_auc": {n: safe_auc(y[head], P[e, head]) for e, (n, _, _) in enumerate(experts)}}
         for cname, p in combos.items():
             res[cname] = dict(
@@ -90,13 +139,12 @@ def main():
         results["tests"][name] = res
 
         best = max(res["per_expert_auc"].items(), key=lambda kv: kv[1] if kv[1] == kv[1] else -1)
-        print(f"\n[{name}] ensemble AUC  max {res['max']['auc']:.3f}  mean {res['mean']['auc']:.3f}  "
-              f"| best single expert {best[0]} {best[1]:.3f}")
-        for s in res["max"]["per_fake_source"]:
-            print(f"  fake {s:24s} max {res['max']['per_fake_source'][s]:.3f}  mean {res['mean']['per_fake_source'][s]:.3f}")
-        for s in res["max"]["real_mean_score"]:
-            print(f"  real {s:24s} mean score  max {res['max']['real_mean_score'][s]:.3f}  "
-                  f"mean {res['mean']['real_mean_score'][s]:.3f}")
+        print(f"\n[{name}] AUC  " + "  ".join(f"{c} {res[c]['auc']:.3f}" for c in combos) +
+              f"  | best single expert {best[0]} {best[1]:.3f}")
+        for src_name in res["max"]["per_fake_source"]:
+            print(f"  fake {src_name:24s} " + "  ".join(f"{c} {res[c]['per_fake_source'][src_name]:.3f}" for c in combos))
+        for src_name in res["max"]["real_mean_score"]:
+            print(f"  real {src_name:24s} mean score " + "  ".join(f"{c} {res[c]['real_mean_score'][src_name]:.3f}" for c in combos))
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(results, indent=2))
