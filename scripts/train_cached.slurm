@@ -12,6 +12,7 @@
 
 # Train one configuration on the clip cache, then evaluate it on every protocol.
 #   sbatch --job-name=b0_T16_s42 --export=ALL,RUN_NAME=b0_T16_s42,T=16,SEED=42 scripts/train_cached.slurm
+#   lists use '+': --export=ALL,RUN_NAME=x,TRAIN_PAIRS=Pair1+Pair2,EXCLUDE=pika+t2vz
 # Variables (defaults = baseline B0): TRAIN_PAIRS MODE ARCH T SEED REAL_STRIDES EXCLUDE EPOCHS TESTS
 set -euo pipefail
 REPO=/sfs/weka/scratch/rjr6zk/face-fft
@@ -21,6 +22,9 @@ source .venv/bin/activate
 : "${RUN_NAME:?set RUN_NAME}"
 TRAIN_PAIRS="${TRAIN_PAIRS:-Pair1}"; MODE="${MODE:-fft_no_mask}"; ARCH="${ARCH:-compact}"
 T="${T:-16}"; SEED="${SEED:-42}"; REAL_STRIDES="${REAL_STRIDES:-1,2,3,4}"; EXCLUDE="${EXCLUDE:-}"
+# sbatch --export splits on commas, so pass lists with "+" (TRAIN_PAIRS=Pair1+Pair2,
+# EXCLUDE=pika+t2vz+vc2); they are converted back to commas here.
+TRAIN_PAIRS="${TRAIN_PAIRS//+/,}"; EXCLUDE="${EXCLUDE//+/,}"; REAL_STRIDES="${REAL_STRIDES//+/,}"
 EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF}"
 OUT_ROOT=/standard/uva-mira-drive/3d-fft_checkpoints/cached
 
