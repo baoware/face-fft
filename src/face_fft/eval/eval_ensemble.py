@@ -82,6 +82,7 @@ def main():
     ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF")
     ap.add_argument("--out", required=True)
     ap.add_argument("--fit_pairs", default="Pair1,Pair2", help="val splits the stacking layers are fit on")
+    ap.add_argument("--dump_dir", default=None, help="also save per-clip expert scores per test set (.npz)")
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--num_workers", type=int, default=8)
     args = ap.parse_args()
@@ -137,6 +138,11 @@ def main():
                                              np.r_[p[real1], p[src == s]]) for s in sorted(set(src[y == 1]))},
                 real_mean_score={s: float(p[real1 & (src == s)].mean()) for s in sorted(set(src[real1]))})
         results["tests"][name] = res
+        if args.dump_dir:
+            Path(args.dump_dir).mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(Path(args.dump_dir) / f"{name}.npz", P=P, y=y, stride=stride, src=src,
+                                grp=np.array([r["group"] for r in ds.rows]),
+                                experts=np.array([n for n, _, _ in experts]))
 
         best = max(res["per_expert_auc"].items(), key=lambda kv: kv[1] if kv[1] == kv[1] else -1)
         print(f"\n[{name}] AUC  " + "  ".join(f"{c} {res[c]['auc']:.3f}" for c in combos) +
