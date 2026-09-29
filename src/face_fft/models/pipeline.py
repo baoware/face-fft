@@ -24,9 +24,13 @@ class FaceFFTPipeline(nn.Module):
         mode: str | PipelineMode = PipelineMode.FFT_LEARNABLE_MASK,
         temporal_frames: int = 8,
         spatial_size: tuple[int, int] = (256, 256),
+        pretrained: bool = False,
+        kinetics_norm: bool = False,
     ):
         super().__init__()
         self.mode = parse_pipeline_mode(mode)
+        if (pretrained or kinetics_norm) and model_type == "compact":
+            raise ValueError("pretrained weights exist only for the torchvision video backbones")
         self.use_fft = self.mode != PipelineMode.PIXEL_BASELINE
         use_learnable_mask = self.mode == PipelineMode.FFT_LEARNABLE_MASK
 
@@ -52,6 +56,8 @@ class FaceFFTPipeline(nn.Module):
         else:
             self.classifier = SpectralVideoCNN(
                 model_name=model_type,
+                pretrained=pretrained,
+                kinetics_norm=kinetics_norm,
                 **clf_kw,
             )
 

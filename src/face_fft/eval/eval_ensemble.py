@@ -91,7 +91,8 @@ def main():
     experts = []
     for run in args.runs:
         cfg = json.loads((Path(run) / "config.json").read_text())
-        m = FaceFFTPipeline(mode=cfg["mode"], model_type=cfg["arch"], temporal_frames=cfg["T"], spatial_size=(256, 256))
+        m = FaceFFTPipeline(mode=cfg["mode"], model_type=cfg["arch"], temporal_frames=cfg["T"], spatial_size=(256, 256),
+                            kinetics_norm=bool(cfg.get("pretrained", False)))
         m.load_state_dict(torch.load(Path(run) / "best.pt", map_location="cpu", weights_only=True))
         experts.append((Path(run).name, m.to(device).eval(), cfg))
     Ts = {cfg["T"] for _, _, cfg in experts}

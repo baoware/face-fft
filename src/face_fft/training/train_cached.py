@@ -55,6 +55,7 @@ def main():
     ap.add_argument("--exclude_sources", default="", help="comma list, dropped from train AND val (LOGO)")
     ap.add_argument("--mode", default="fft_no_mask")
     ap.add_argument("--arch", default="compact")
+    ap.add_argument("--pretrained", action="store_true", help="Kinetics-400 weights (torchvision backbones, pixel input)")
     ap.add_argument("--T", type=int, default=16)
     ap.add_argument("--real_strides", default="1,2,3,4", help="'1' disables frame-dropping augmentation")
     ap.add_argument("--seed", type=int, default=42)
@@ -91,7 +92,7 @@ def main():
     val_loader = DataLoader(val_ds, shuffle=False, **loader_kw)
 
     model = FaceFFTPipeline(mode=args.mode, model_type=args.arch, temporal_frames=args.T,
-                            spatial_size=(256, 256)).to(device)
+                            spatial_size=(256, 256), pretrained=args.pretrained).to(device)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)

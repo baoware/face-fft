@@ -67,16 +67,18 @@ def main():
     if args.run_dir:
         cfg = json.loads((Path(args.run_dir) / "config.json").read_text())
         mode, arch, T, ckpt = cfg["mode"], cfg["arch"], cfg["T"], Path(args.run_dir) / "best.pt"
+        kin = bool(cfg.get("pretrained", False))
         thr = cfg["best"]["threshold"]
         out_path = Path(args.out or Path(args.run_dir) / "eval.json")
     else:
         mode, arch, T, ckpt, thr = args.mode, args.arch, args.T, Path(args.ckpt), 0.5
+        kin = False
         out_path = Path(args.out)
     if args.threshold is not None:
         thr = args.threshold
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = FaceFFTPipeline(mode=mode, model_type=arch, temporal_frames=T, spatial_size=(256, 256))
+    model = FaceFFTPipeline(mode=mode, model_type=arch, temporal_frames=T, spatial_size=(256, 256), kinetics_norm=kin)
     model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
     model.to(device).eval()
     print(f"{ckpt}  mode={mode} arch={arch} T={T} threshold={thr:.3f}", flush=True)

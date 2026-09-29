@@ -29,11 +29,11 @@ EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF
 OUT_ROOT=/standard/uva-mira-drive/3d-fft_checkpoints/cached
 
 echo "Job started on $(hostname) at $(date)"
-echo "run=${RUN_NAME} pairs=${TRAIN_PAIRS} mode=${MODE} arch=${ARCH} T=${T} seed=${SEED} strides=${REAL_STRIDES} exclude=${EXCLUDE:-none}"
+echo "run=${RUN_NAME} pairs=${TRAIN_PAIRS} mode=${MODE} arch=${ARCH} pretrained=${PRETRAINED:-no} T=${T} seed=${SEED} strides=${REAL_STRIDES} exclude=${EXCLUDE:-none}"
 PYTHONPATH=src python -m face_fft.training.train_cached \
     --cache "${REPO}/cache/v1" --train_pairs "${TRAIN_PAIRS}" --exclude_sources "${EXCLUDE}" \
     --mode "${MODE}" --arch "${ARCH}" --T "${T}" --seed "${SEED}" --real_strides "${REAL_STRIDES}" \
-    --epochs "${EPOCHS}" --out_root "${OUT_ROOT}" --run_name "${RUN_NAME}"
+    --epochs "${EPOCHS}" --out_root "${OUT_ROOT}" --run_name "${RUN_NAME}" ${PRETRAINED:+--pretrained}
 PYTHONPATH=src python -m face_fft.eval.eval_cached \
     --cache "${REPO}/cache/v1" --run_dir "${OUT_ROOT}/${RUN_NAME}" --tests "${TESTS}"
 echo "Job finished at $(date)"
