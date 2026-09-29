@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-KEY = ("mode", "arch", "T", "train_pairs", "real_strides", "exclude_sources", "pretrained")
+KEY = ("mode", "arch", "T", "train_pairs", "real_strides", "exclude_sources", "pretrained", "lr")
 
 
 def main():
@@ -38,8 +38,8 @@ def main():
              "| mode | arch | T | train | strides | excl | seeds | " + " | ".join(tests) + " |",
              "|" + "---|" * (7 + len(tests))]
     for key, runs in sorted(groups.items(), key=lambda kv: (kv[0][2], kv[0][0])):
-        mode, arch, T, pairs, strides, excl, pre = key
-        arch = arch + ("+K400" if pre else "")
+        mode, arch, T, pairs, strides, excl, pre, lr = key
+        arch = arch + ("+K400" if pre else "") + (f" lr{lr:g}" if lr and lr != 1e-3 else "")
         cells = [fmt([r[2]["tests"][t]["auc"] for r in runs if t in r[2]["tests"]]) for t in tests]
         lines.append(f"| {mode} | {arch} | {T} | {pairs} | {strides} | {excl or '–'} | "
                      f"{','.join(str(r[0]) for r in sorted(runs))} | " + " | ".join(cells) + " |")
