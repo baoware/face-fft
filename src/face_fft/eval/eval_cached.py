@@ -26,7 +26,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import average_precision_score, confusion_matrix, f1_score, roc_auc_score
 from torch.utils.data import DataLoader
 
 from face_fft.data.cached import CachedClipDataset
@@ -54,7 +54,7 @@ def safe_auc(y, p):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", required=True)
-    ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF")
+    ap.add_argument("--tests", default="Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF,DVFp")
     ap.add_argument("--run_dir", help="output dir of train_cached.py (reads config.json + best.pt)")
     ap.add_argument("--ckpt", help="or: a bare state_dict (e.g. the old DeepAction checkpoints)")
     ap.add_argument("--mode"); ap.add_argument("--arch"); ap.add_argument("--T", type=int)
@@ -86,7 +86,15 @@ def main():
     tests = [t for t in args.tests.split(",") if t]
     results = {"ckpt": str(ckpt), "mode": mode, "arch": arch, "T": T, "threshold": thr, "tests": {}}
     for name in tests:
-        if name == "6.7m":
+        if name == "DVFp":
+            # MM-Det's DVF protocol: its training data (Stable Video Diffusion fakes, YouTube
+            # reals) is excluded; the 7 other generators are scored against the other reals
+            # and per-generator AUCs are averaged.
+            ds = CachedClipDataset(args.cache, ["DVF"], "test", T)
+            ds.rows = [r for r in ds.rows if not (r["label"] == 1 and r["source"] == "stablevideodiffusion")
+                       and not (r["label"] == 0 and r["source"] == "real_youtube")]
+            note = "MM-Det protocol: no SVD fakes, no YouTube reals; headline = mean per-generator AUC"
+        elif name == "6.7m":
             ds = CachedClipDataset(args.cache, ["6.7m", "Pair1", "Pair2", "DeepAction"], "test", T)
             ds.rows = [r for r in ds.rows if r["pair"] == "6.7m" or r["label"] == 0]
             note = "reals pooled from Pair1/Pair2/DeepAction test: real source differs from fakes"
@@ -114,14 +122,26 @@ def main():
             res["auc_ci95"] = group_bootstrap_auc(yh, ph, grp[head])
             tn, fp, fn, tp = confusion_matrix(yh, pred, labels=[0, 1]).ravel()
             res.update(confusion=dict(tn=int(tn), fp=int(fp), fn=int(fn), tp=int(tp)),
-                       f1=float(f1_score(yh, pred)), balanced_acc=float(0.5 * (tp / (tp + fn) + tn / (tn + fp))))
+                       f1=float(f1_score(yh, pred)), balanced_acc=float(0.5 * (tp / (tp + fn) + tn / (tn + fp))),
+                       acc=float((tp + tn) / len(yh)))
+            # at a fixed 0.5 threshold too, as benchmark papers usually report (argmax)
+            p05 = (ph >= 0.5).astype(int)
+            tn5, fp5, fn5, tp5 = confusion_matrix(yh, p05, labels=[0, 1]).ravel()
+            res.update(acc_05=float((tp5 + tn5) / len(yh)), f1_05=float(f1_score(yh, p05)),
+                       balanced_acc_05=float(0.5 * (tp5 / (tp5 + fn5) + tn5 / (tn5 + fp5))))
         res["auc_all_real_strides"] = safe_auc(y, p)
         real1 = (y == 0) & (stride == 1)
+        def vs_reals(s, fn):
+            yy = np.r_[np.zeros(real1.sum()), np.ones((src == s).sum())]
+            return float(fn(yy, np.r_[p[real1], p[src == s]])) if len(set(yy)) == 2 else float("nan")
         res["per_fake_source"] = {s: dict(n=int((src == s).sum()),
-                                          auc_vs_reals=safe_auc(np.r_[np.zeros(real1.sum()), np.ones((src == s).sum())],
-                                                                np.r_[p[real1], p[src == s]]),
+                                          auc_vs_reals=vs_reals(s, roc_auc_score),
+                                          ap_vs_reals=vs_reals(s, average_precision_score),
                                           detection_rate=float((p[src == s] >= thr).mean()))
                                   for s in sorted(set(src[y == 1]))}
+        pf = res["per_fake_source"].values()
+        res["mean_per_generator_auc"] = float(np.nanmean([v["auc_vs_reals"] for v in pf]))
+        res["mean_per_generator_ap"] = float(np.nanmean([v["ap_vs_reals"] for v in pf]))
         res["per_real_source"] = {s: dict(n=int((real1 & (src == s)).sum()),
                                           false_positive_rate=float((p[real1 & (src == s)] >= thr).mean()))
                                   for s in sorted(set(src[real1]))}
@@ -132,7 +152,8 @@ def main():
         results["tests"][name] = res
 
         ci = res.get("auc_ci95")
-        print(f"\n[{name}] reals={res['n_real']} fakes={res['n_fake']}  AUC {res['auc']:.3f}"
+        print(f"\n[{name}] mean per-generator AUC {res['mean_per_generator_auc']:.3f}  AP {res['mean_per_generator_ap']:.3f}")
+        print(f"[{name}] reals={res['n_real']} fakes={res['n_fake']}  AUC {res['auc']:.3f}"
               + (f" [{ci[0]:.3f}, {ci[1]:.3f}]" if ci else "") + (f"  ({note})" if note else ""))
         if "confusion" in res:
             c = res["confusion"]

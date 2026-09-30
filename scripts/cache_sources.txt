@@ -51,3 +51,5 @@ DVF real_opensora test=1000
 DVF real_videocrafter1 test=1000
 DVF real_youtube test=1000
 DVF real_zeroscope test=1000
+DVF real_youtube all
+DVF stablevideodiffusion all

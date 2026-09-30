@@ -25,7 +25,7 @@ T="${T:-16}"; SEED="${SEED:-42}"; REAL_STRIDES="${REAL_STRIDES:-1,2,3,4}"; EXCLU
 # sbatch --export splits on commas, so pass lists with "+" (TRAIN_PAIRS=Pair1+Pair2,
 # EXCLUDE=pika+t2vz+vc2); they are converted back to commas here.
 TRAIN_PAIRS="${TRAIN_PAIRS//+/,}"; EXCLUDE="${EXCLUDE//+/,}"; REAL_STRIDES="${REAL_STRIDES//+/,}"
-EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF}"
+EPOCHS="${EPOCHS:-15}"; TESTS="${TESTS:-Pair1,Pair2,DeepAction,6.7m,GenVideo,DVF,DVFp}"; TESTS="${TESTS//+/,}"
 OUT_ROOT=/standard/uva-mira-drive/3d-fft_checkpoints/cached
 
 echo "Job started on $(hostname) at $(date)"

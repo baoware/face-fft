@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=04:00:00
-#SBATCH --array=1-53
+#SBATCH --array=1-55
 #SBATCH --output=/sfs/weka/scratch/rjr6zk/face-fft/logs/clip_cache_%A_%a.out
 
 # One array task per (pair, source) in scripts/cache_sources.txt.
