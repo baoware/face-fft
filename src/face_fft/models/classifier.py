@@ -1,6 +1,11 @@
 import torch
 import torch.nn as nn
-from torchvision.models.video import r3d_18, mc3_18, r2plus1d_18
+from torchvision.models.video import (r3d_18, mc3_18, r2plus1d_18, R3D_18_Weights,
+                                      MC3_18_Weights, R2Plus1D_18_Weights)
+
+# Kinetics-400 input statistics the pretrained torchvision video models expect
+KINETICS_MEAN = (0.43216, 0.394666, 0.37645)
+KINETICS_STD = (0.22803, 0.22145, 0.216989)
 
 
 class LearnableSpectralMask(nn.Module):
@@ -104,7 +109,15 @@ class SpectralVideoCNN(nn.Module):
         use_learnable_mask: bool = True,
         temporal_frames: int = 8,
         spatial_size: tuple[int, int] = (256, 256),
+        pretrained: bool = False,
+        kinetics_norm: bool = False,
     ):
+        """
+        pretrained: load Kinetics-400 weights (downloads once) and normalise inputs
+            with Kinetics statistics. Meaningful for raw-pixel input only.
+        kinetics_norm: apply that normalisation without downloading weights -- used
+            when rebuilding a pretrained-then-finetuned model to load its checkpoint.
+        """
         super().__init__()
 
         h, w = spatial_size
@@ -113,14 +126,16 @@ class SpectralVideoCNN(nn.Module):
         else:
             self.spectral_filter = nn.Identity()
 
-        if model_name == "r3d_18":
-            self.backbone = r3d_18(weights=None)
-        elif model_name == "mc3_18":
-            self.backbone = mc3_18(weights=None)
-        elif model_name == "r2plus1d_18":
-            self.backbone = r2plus1d_18(weights=None)
-        else:
+        builders = {"r3d_18": (r3d_18, R3D_18_Weights), "mc3_18": (mc3_18, MC3_18_Weights),
+                    "r2plus1d_18": (r2plus1d_18, R2Plus1D_18_Weights)}
+        if model_name not in builders:
             raise ValueError(f"Unsupported model: {model_name}")
+        build, weights = builders[model_name]
+        self.backbone = build(weights=weights.KINETICS400_V1 if pretrained else None)
+
+        self.kinetics_norm = pretrained or kinetics_norm
+        self.register_buffer("in_mean", torch.tensor(KINETICS_MEAN).view(1, 3, 1, 1, 1), persistent=False)
+        self.register_buffer("in_std", torch.tensor(KINETICS_STD).view(1, 3, 1, 1, 1), persistent=False)
 
         if in_channels != 3:
             original_conv = self.backbone.stem[0]
@@ -141,4 +156,6 @@ class SpectralVideoCNN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_filtered = self.spectral_filter(x)
+        if self.kinetics_norm:
+            x_filtered = (x_filtered - self.in_mean) / self.in_std
         return self.backbone(x_filtered)

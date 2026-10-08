@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This repository implements a detection pipeline for low resolution AI generated human face videos using spatiotemporal spectral analysis.
+This repository implements a detection pipeline for low resolution AI generated videos using spatiotemporal spectral analysis.
 
 The core idea is that efficient video generation models introduce structured artifacts in the 3D frequency domain due to latent compression, patch tokenization, and temporal downsampling. These artifacts may remain detectable even when spatial resolution is low.
 
@@ -40,7 +40,7 @@ When implementing changes, avoid introducing steps that would unintentionally de
 
 The following constraints define project scope:
 
-- Only human face videos are considered
+- Any AI-generated video content is in scope, not only human faces (widened 2026-09-23 to use all of GenVidBench)
 - Low resolution setting such as 256 by 256
 - Binary classification: Real vs Synthetic
 - Lightweight detection pipeline
@@ -63,6 +63,11 @@ Dataset structure assumptions:
 - Identical lighting and background within pairs
 - Synthetic videos generated from first frame of real videos
 - PyTorch compatible dataset format
+
+The pairing assumptions above hold for DeepAction and locally generated data. GenVidBench is
+NOT first-frame paired: its real and fake videos come from different sources and differ in
+resolution, frame rate, length and bitrate. Normalise every video to a common format before
+the FFT, or the classifier learns the file format instead of generator artifacts.
 
 When modifying data loading:
 
