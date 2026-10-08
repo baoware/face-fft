@@ -22,7 +22,7 @@
 # CogVideoX chunking ablation (task 1 only; writes cogvideox-dec<N>/ beside the default run):
 #   sbatch --array=1 --export=ALL,DECODE_LATENTS=4 scripts/vae_roundtrip.slurm     # seams every 16 frames
 #   sbatch --array=1 --export=ALL,DECODE_LATENTS=13 scripts/vae_roundtrip.slurm    # one chunk, no seams
-# Variables: VIEW (resize) N (200) FRAMES (49) OUT (<repo>/roundtrip_frames) REPO HF_HOME
+# Variables: VIEW (resize) N (200) FRAMES (49) OUT (/scratch/$USER/roundtrip_frames) REPO HF_HOME
 #            DA_ROOT (DeepAction; must contain Pexels/<id>/*.mp4. Default: this checkout's copy,
 #                     else SHARED_DA_ROOT below)
 #            DECODE_LATENTS (unset = pipeline default, 2 = seams every 8 frames; valid: 2 4 6 12 13)
@@ -33,7 +33,7 @@ source .venv/bin/activate
 # CogVideoX and Wan are already in the lossless test's cache; point HF_HOME there to reuse them
 export HF_HOME="${HF_HOME:-/scratch/${USER}/hf-cache}"
 export PYTORCH_ALLOC_CONF=expandable_segments:True
-VIEW="${VIEW:-resize}"; N="${N:-200}"; FRAMES="${FRAMES:-49}"; OUT="${OUT:-${REPO}/roundtrip_frames}"
+VIEW="${VIEW:-resize}"; N="${N:-200}"; FRAMES="${FRAMES:-49}"; OUT="${OUT:-/scratch/${USER}/roundtrip_frames}"
 SHARED_DA_ROOT=/sfs/weka/scratch/gcs3ja/face-fft/src/face_fft/data/deepaction_dataset   # Pexels/ only, from faridlab/deepaction_v1
 if [ -z "${DA_ROOT:-}" ]; then
     DA_ROOT="${REPO}/src/face_fft/data/deepaction_dataset"

@@ -14,12 +14,12 @@
 # Optional: queue it behind the GPU array (afterany, so one failed VAE does not block the rest):
 #   jid=$(sbatch --parsable scripts/vae_roundtrip.slurm)
 #   sbatch --dependency=afterany:$jid scripts/vae_roundtrip_analyze.slurm
-# Variables: VIEW (resize) OUT (<repo>/roundtrip_frames) RESULTS REPO
+# Variables: VIEW (resize) OUT (/scratch/$USER/roundtrip_frames) RESULTS REPO
 set -euo pipefail
 REPO="${REPO:-${SLURM_SUBMIT_DIR}}"
 cd "${REPO}"
 source .venv/bin/activate
-VIEW="${VIEW:-resize}"; OUT="${OUT:-${REPO}/roundtrip_frames}"
+VIEW="${VIEW:-resize}"; OUT="${OUT:-/scratch/${USER}/roundtrip_frames}"
 RESULTS="${RESULTS:-/standard/uva-mira-drive/3d-fft_results/vae_roundtrip}"
 echo "view=${VIEW} frames=${OUT} results=${RESULTS} on $(hostname) at $(date)"
 PYTHONPATH=src python bin/vae_roundtrip.py analyze --view "${VIEW}" --out "${OUT}" --results "${RESULTS}" --workers 14

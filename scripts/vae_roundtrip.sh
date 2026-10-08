@@ -11,7 +11,7 @@
 #   N=50 bash scripts/vae_roundtrip.sh            # quick pass
 #
 # Variables (all optional, passed through to both jobs):
-#   VIEW (resize)  N (200)  FRAMES (49)  OUT (<repo>/roundtrip_frames)
+#   VIEW (resize)  N (200)  FRAMES (49)  OUT (/scratch/$USER/roundtrip_frames)
 #   RESULTS (/standard/uva-mira-drive/3d-fft_results/vae_roundtrip)  HF_HOME
 #   DA_ROOT (<repo>/src/face_fft/data/deepaction_dataset; must contain Pexels/<id>/*.mp4)
 #
