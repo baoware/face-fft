@@ -57,3 +57,6 @@ cache/
 
 # Lossless-test generated frames (regenerable with bin/lossless_test.py generate)
 lossless_frames/
+
+# VAE round-trip raw frames (regenerable with bin/vae_roundtrip.py roundtrip)
+roundtrip_frames/
