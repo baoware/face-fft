@@ -45,6 +45,9 @@ slurm_files/
 # Local files
 local/
 
+# Output files
+output/
+
 # Images
 *.png
 
